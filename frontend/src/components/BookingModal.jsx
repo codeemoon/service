@@ -12,9 +12,14 @@ const BookingModal = ({ service, onClose }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [cashfree, setCashfree] = useState(null);
+  
+  // Slot State
+  const [slots, setSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   const [formData, setFormData] = useState({
-    scheduledDate: "",
+    date: "",
+    time: "",
     address: "",
     notes: "",
   });
@@ -28,6 +33,21 @@ const BookingModal = ({ service, onClose }) => {
     };
     initializeSDK();
   }, []);
+
+  const fetchSlots = async (date) => {
+      if (!date) return;
+      setLoadingSlots(true);
+      try {
+          // Format date as YYYY-MM-DD if not already
+          const { data } = await api.get(`/services/${service._id}/slots?date=${date}`);
+          setSlots(data);
+      } catch (error) {
+          console.error("Failed to fetch slots", error);
+          toast.error("Could not load available times");
+      } finally {
+          setLoadingSlots(false);
+      }
+  };
 
   const handleBooking = async () => {
     if (!user) {
@@ -44,10 +64,13 @@ const BookingModal = ({ service, onClose }) => {
     try {
       setLoading(true);
       
+      // Combine Date and Time
+      const scheduledDateTime = new Date(`${formData.date}T${formData.time}`);
+
       // Step 1: Create Booking
       const bookResponse = await api.post("/bookings", {
         serviceId: service._id,
-        scheduledDate: formData.scheduledDate,
+        scheduledDate: scheduledDateTime,
         address: formData.address,
         notes: formData.notes,
       });
@@ -82,57 +105,98 @@ const BookingModal = ({ service, onClose }) => {
         {/* Body */}
         <div className="p-6 space-y-6">
           {step === 1 && (
-            <div className="space-y-4">
-              <div className="bg-blue-900/20 border border-blue-500/20 p-4 rounded-xl flex items-start space-x-4">
-                {service.image && <img src={service.image} alt="" className="w-16 h-16 rounded-lg object-cover" />}
+              <div className="space-y-4">
+               {/* Detail Header */}
+                <div className="bg-blue-900/20 border border-blue-500/20 p-4 rounded-xl flex items-start space-x-4">
+                  {service.image && <img src={service.image} alt="" className="w-16 h-16 rounded-lg object-cover" />}
+                  <div>
+                    <h4 className="text-white font-bold">{service.name}</h4>
+                    <p className="text-blue-400 font-bold">₹{service.price}</p>
+                    <p className="text-gray-500 text-xs mt-1">Duration: {service.duration} mins</p>
+                  </div>
+                </div>
+
+                {/* Date Selection */}
                 <div>
-                  <h4 className="text-white font-bold">{service.name}</h4>
-                  <p className="text-blue-400 font-bold">₹{service.price}</p>
+                  <label className="block text-gray-400 text-sm font-medium mb-2">Select Date</label>
+                  <div className="relative">
+                      <Calendar className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
+                      <input 
+                          type="date" 
+                          min={new Date().toISOString().split('T')[0]} // Disable past dates
+                          className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500"
+                          value={formData.date}
+                          onChange={(e) => {
+                            setFormData({...formData, date: e.target.value, time: ""}); // Reset time when date changes
+                            fetchSlots(e.target.value);
+                          }}
+                      />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-gray-400 text-sm font-medium mb-2">Select Date & Time</label>
-                <div className="relative">
-                    <Calendar className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
-                    <input 
-                        type="datetime-local" 
-                        className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500"
-                        value={formData.scheduledDate}
-                        onChange={(e) => setFormData({...formData, scheduledDate: e.target.value})}
-                    />
-                </div>
-              </div>
+                {/* Slot Selection */}
+                {formData.date && (
+                    <div>
+                        <label className="block text-gray-400 text-sm font-medium mb-2">Select Time Slot</label>
+                        {loadingSlots ? (
+                            <div className="text-gray-500 text-sm text-center py-2">Loading slots...</div>
+                        ) : slots.length > 0 ? (
+                            <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto custom-scrollbar">
+                                {slots.map(slot => (
+                                    <button
+                                        key={slot}
+                                        onClick={() => setFormData({...formData, time: slot})}
+                                        className={`py-2 px-1 rounded-lg text-sm font-medium transition-all
+                                            ${formData.time === slot 
+                                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30" 
+                                                : "bg-[#0a0a0a] border border-gray-700 text-gray-300 hover:border-blue-500"
+                                            }
+                                        `}
+                                    >
+                                        {slot}
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-red-400 text-sm text-center py-2 bg-red-900/10 rounded-lg">
+                                No slots available for this date.
+                            </div>
+                        )}
+                    </div>
+                )}
 
-              <div>
-                <label className="block text-gray-400 text-sm font-medium mb-2">Address</label>
-                <div className="relative">
-                    <MapPin className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
-                    <textarea 
-                        className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 min-h-[80px]"
-                        placeholder="Enter your full address..."
-                        value={formData.address}
-                        onChange={(e) => setFormData({...formData, address: e.target.value})}
-                    />
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-gray-400 text-sm font-medium mb-2">Additional Notes (Optional)</label>
-                <div className="relative">
-                    <CreditCard className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
-                    <textarea 
-                        className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 min-h-[80px]"
-                        placeholder="Any special instructions for the provider? (e.g., entrance details, pet info)"
-                        value={formData.notes}
-                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                    />
+                {/* Address */}
+                <div>
+                  <label className="block text-gray-400 text-sm font-medium mb-2">Address</label>
+                  <div className="relative">
+                      <MapPin className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
+                      <textarea 
+                          className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 min-h-[80px]"
+                          placeholder="Enter your full address..."
+                          value={formData.address}
+                          onChange={(e) => setFormData({...formData, address: e.target.value})}
+                      />
+                  </div>
                 </div>
-              </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-gray-400 text-sm font-medium mb-2">Additional Notes (Optional)</label>
+                  <div className="relative">
+                      <CreditCard className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
+                      <textarea 
+                          className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 min-h-[80px]"
+                          placeholder="Special instructions..."
+                          value={formData.notes}
+                          onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                      />
+                  </div>
+                </div>
 
                <button 
                 onClick={() => setStep(2)}
-                disabled={!formData.scheduledDate || !formData.address}
+                disabled={!formData.date || !formData.time || !formData.address}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Proceed to Payment

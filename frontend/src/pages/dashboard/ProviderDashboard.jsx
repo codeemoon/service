@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import api from "../../api/axios";
+import { Briefcase, Calendar, Wallet, Plus, Edit2, Trash2, Check, Loader, Image as ImageIcon, X, Clock } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { Check, X, Clock, Plus, Image as ImageIcon, Loader, Edit2, Trash2, Calendar, Briefcase } from "lucide-react";
+import { convertToWebp } from "../../utils/convertToWebp";
 import { useAuth } from "../../context/AuthContext";
 
 const ProviderDashboard = () => {
@@ -20,6 +21,8 @@ const ProviderDashboard = () => {
     price: "",
     duration: "",
     category: "",
+    startTime: "09:00",
+    endTime: "17:00",
     image: null
   });
   const [savingService, setSavingService] = useState(false);
@@ -28,14 +31,19 @@ const ProviderDashboard = () => {
   const [myServices, setMyServices] = useState([]);
   const [loadingServices, setLoadingServices] = useState(false);
 
+  // Wallet State
+  const [walletData, setWalletData] = useState({ walletBalance: null, plan: "free", rate: 0.70 });
+
   useEffect(() => {
-    fetchBookings();
     fetchCategories();
+    fetchWallet();
   }, []);
 
   useEffect(() => {
     if (activeTab === "services") {
       fetchMyServices();
+    } else if (activeTab === "bookings") {
+      fetchBookings();
     }
   }, [activeTab]);
 
@@ -47,6 +55,15 @@ const ProviderDashboard = () => {
       console.error("Failed to fetch bookings", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchWallet = async () => {
+    try {
+      const { data } = await api.get("/admin/wallet");
+      setWalletData({ walletBalance: data.walletBalance, plan: data.plan ?? "free", rate: data.rate ?? 0.70 });
+    } catch (error) {
+      console.error("Failed to fetch wallet", error);
     }
   };
 
@@ -93,6 +110,8 @@ const ProviderDashboard = () => {
       formData.append("price", serviceForm.price);
       formData.append("duration", serviceForm.duration);
       formData.append("category", serviceForm.category);
+      formData.append("startTime", serviceForm.startTime);
+      formData.append("endTime", serviceForm.endTime);
       if (serviceForm.image) {
         formData.append("image", serviceForm.image);
       }
@@ -110,7 +129,7 @@ const ProviderDashboard = () => {
       }
       
       setShowServiceModal(false);
-      setServiceForm({ name: "", description: "", price: "", duration: "", category: "", image: null });
+      setServiceForm({ name: "", description: "", price: "", duration: "", category: "", startTime: "09:00", endTime: "17:00", image: null });
       setEditingService(null);
       fetchMyServices();
     } catch (error) {
@@ -128,6 +147,8 @@ const ProviderDashboard = () => {
       price: service.price,
       duration: service.duration,
       category: service.category._id || service.category,
+      startTime: service.startTime || "09:00",
+      endTime: service.endTime || "17:00",
       image: null
     });
     setShowServiceModal(true);
@@ -175,6 +196,33 @@ const ProviderDashboard = () => {
         {/* Bookings Tab */}
         {activeTab === "bookings" && (
           <div>
+            {/* Wallet Card */}
+            <div className="bg-gradient-to-r from-green-950/60 to-emerald-900/30 border border-green-800/40 rounded-2xl p-5 mb-6 flex items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-green-600/20 border border-green-500/20 flex items-center justify-center flex-shrink-0">
+                <Wallet className="w-7 h-7 text-green-400" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className="text-green-400/70 text-xs font-semibold uppercase tracking-wider">My Wallet Balance</p>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${
+                    walletData.plan === "premium" ? "bg-yellow-500/20 text-yellow-400" :
+                    walletData.plan === "basic"   ? "bg-blue-500/20 text-blue-400" :
+                                                    "bg-gray-700 text-gray-400"
+                  }`}>{walletData.plan}</span>
+                </div>
+                <p className="text-3xl font-black text-green-300">
+                  {walletData.walletBalance === null ? (
+                    <span className="text-gray-600 text-xl">Loading...</span>
+                  ) : (
+                    <>₹{walletData.walletBalance.toLocaleString('en-IN')}</>
+                  )}
+                </p>
+                <p className="text-gray-600 text-xs mt-1">
+                  You earn <span className="text-green-500 font-bold">{Math.round((walletData.rate ?? 0.7) * 100)}%</span> of every completed booking
+                </p>
+              </div>
+            </div>
+
             {loading ? (
               <div className="text-white">Loading...</div>
             ) : bookings.length > 0 ? (
@@ -224,7 +272,7 @@ const ProviderDashboard = () => {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-white">My Services</h2>
-              <button onClick={() => { setEditingService(null); setServiceForm({ name: "", description: "", price: "", duration: "", category: "", image: null }); setShowServiceModal(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 transition flex items-center">
+              <button onClick={() => { setEditingService(null); setServiceForm({ name: "", description: "", price: "", duration: "", category: "", startTime: "09:00", endTime: "17:00", image: null }); setShowServiceModal(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 transition flex items-center">
                 <Plus className="w-5 h-5 mr-2" /> Add Service
               </button>
             </div>
@@ -253,7 +301,10 @@ const ProviderDashboard = () => {
                         <span className="text-blue-500 font-bold">${service.price}</span>
                         <span className="text-gray-500 text-xs">{service.duration} mins</span>
                       </div>
-                      <div className="mt-2 text-xs text-gray-600">Category: {service.category?.name || "Unknown"}</div>
+                      <div className="mt-2 text-xs text-gray-600">
+                        Category: {service.category?.name || "Unknown"} <br/>
+                        Hours: {service.startTime} - {service.endTime}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -272,16 +323,42 @@ const ProviderDashboard = () => {
               <h2 className="text-2xl font-bold text-white mb-6">{editingService ? "Edit Service" : "Add New Service"}</h2>
               
               <form onSubmit={handleSaveService} className="space-y-4">
+                {/* 1. Name */}
                 <div>
                   <label className="block text-gray-400 text-sm mb-1">Service Name</label>
                   <input type="text" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={serviceForm.name} onChange={(e) => setServiceForm({...serviceForm, name: e.target.value})} required />
                 </div>
                 
+                {/* 2. Category */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-1">Description</label>
-                  <textarea className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={serviceForm.description} onChange={(e) => setServiceForm({...serviceForm, description: e.target.value})} required />
+                  <label className="block text-gray-400 text-sm mb-1">Category</label>
+                  <select className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={serviceForm.category} onChange={(e) => setServiceForm({...serviceForm, category: e.target.value})} required>
+                    <option value="">Select Category</option>
+                    {categories.map(cat => (
+                      <option key={cat._id} value={cat._id}>{cat.name}</option>
+                    ))}
+                  </select>
                 </div>
 
+                {/* 3. Start Time & End Time */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-1">Start Time</label>
+                    <div className="relative">
+                        <Clock className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
+                        <input type="time" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-blue-500 outline-none" value={serviceForm.startTime} onChange={(e) => setServiceForm({...serviceForm, startTime: e.target.value})} required />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-1">End Time</label>
+                    <div className="relative">
+                        <Clock className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
+                        <input type="time" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-blue-500 outline-none" value={serviceForm.endTime} onChange={(e) => setServiceForm({...serviceForm, endTime: e.target.value})} required />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Price & Duration */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-400 text-sm mb-1">Price ($)</label>
@@ -293,33 +370,57 @@ const ProviderDashboard = () => {
                   </div>
                 </div>
 
+                {/* 5. Description */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-1">Category</label>
-                  <select className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={serviceForm.category} onChange={(e) => setServiceForm({...serviceForm, category: e.target.value})} required>
-                    <option value="">Select Category</option>
-                    {categories.map(cat => (
-                      <option key={cat._id} value={cat._id}>{cat.name}</option>
-                    ))}
-                  </select>
+                  <label className="block text-gray-400 text-sm mb-1">Description</label>
+                  <textarea className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={serviceForm.description} onChange={(e) => setServiceForm({...serviceForm, description: e.target.value})} required />
                 </div>
 
+                {/* 6. Image */}
                 <div>
                   <label className="block text-gray-400 text-sm mb-1">Service Image</label>
-                  <div className="border border-gray-700 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition relative">
-                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => setServiceForm({ ...serviceForm, image: e.target.files[0] })} />
+                  <div className="border border-gray-700 border-dashed rounded-xl overflow-hidden cursor-pointer hover:border-blue-500 transition relative group">
+                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        try {
+                          const webp = await convertToWebp(file);
+                          setServiceForm({ ...serviceForm, image: webp });
+                        } catch {
+                          setServiceForm({ ...serviceForm, image: file });
+                        }
+                      }}
+                    />
                     {serviceForm.image ? (
-                      <div className="text-green-500 flex items-center justify-center">
-                        <Check className="mr-2" /> {serviceForm.image.name}
+                      <div className="relative">
+                        <img
+                          src={URL.createObjectURL(serviceForm.image)}
+                          alt="Preview"
+                          className="w-full h-40 object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                          <span className="text-white text-sm font-medium">Click to change</span>
+                        </div>
+                        <div className="absolute bottom-2 left-2 bg-black/60 text-green-400 text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                          <Check className="w-3 h-3" /> {serviceForm.image.name}
+                        </div>
                       </div>
                     ) : editingService?.image ? (
-                      <div className="text-blue-500 flex flex-col items-center">
-                        <ImageIcon className="w-8 h-8 mb-2" />
-                        <span>Current image set. Click to change.</span>
+                      <div className="relative">
+                        <img
+                          src={editingService.image}
+                          alt="Current"
+                          className="w-full h-40 object-cover opacity-70"
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <span className="text-white text-sm font-medium">Click to change image</span>
+                        </div>
                       </div>
                     ) : (
-                      <div className="text-gray-500 flex flex-col items-center">
-                        <ImageIcon className="w-8 h-8 mb-2" />
-                        <span>Click to upload image</span>
+                      <div className="p-8 text-gray-500 flex flex-col items-center gap-2">
+                        <ImageIcon className="w-10 h-10 opacity-40" />
+                        <span className="text-sm">Click to upload image</span>
                       </div>
                     )}
                   </div>

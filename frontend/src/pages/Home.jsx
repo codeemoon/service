@@ -1,177 +1,190 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
-import { ArrowRight, Search, Zap, Shield, Star } from "lucide-react";
 import ServiceCard from "../components/ServiceCard";
+import { MapPin, Globe, ArrowRight, Star, Shield, Clock } from "lucide-react";
 
 const Home = () => {
+  const navigate = useNavigate();
+
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [locationStatus, setLocationStatus] = useState("pending"); // "pending" | "granted" | "denied"
+  const [userLocation, setUserLocation] = useState(null); // { name: string }
 
-  const bannerData = [
-    {
-        src: "/banner/pexels-alaxmatias-28513057.jpg",
-        title: "Immaculate Cleanliness",
-        subtitle: "Experience the joy of a spotless home."
-    },
-    {
-        src: "/banner/pexels-harrun-muhammad-116282236-32467382.jpg",
-        title: "Expert Repairs",
-        subtitle: "Skilled professionals for every fix."
-    },
-    {
-        src: "/banner/pexels-thirdman-7657044.jpg",
-        title: "Beauty & Wellness",
-        subtitle: "Salon luxury, right at your doorstep."
-    },
-    {
-        src: "/banner/pexels-tima-miroshnichenko-6195274.jpg",
-        title: "Reliable Plumbing",
-        subtitle: "Leak-free living, guaranteed."
-    },
-    {
-        src: "/banner/pexels-tima-miroshnichenko-6873174.jpg",
-        title: "Electrical Safety",
-        subtitle: "Certified electricians for your peace of mind."
-    }
-  ];
-
+  // Step 1: Ask for browser location on mount
   useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationStatus("denied");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          // Reverse geocode using OpenStreetMap Nominatim
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          const data = await res.json();
+          const address = data.address;
+          const district =
+            address.state_district ||
+            address.city ||
+            address.town ||
+            address.county ||
+            "";
+          if (district) {
+            setUserLocation({ name: district });
+          }
+          setLocationStatus("granted");
+        } catch {
+          setLocationStatus("granted"); // Still mark granted, just no name
+        }
+      },
+      () => {
+        setLocationStatus("denied");
+      }
+    );
+  }, []);
+
+  // Step 2: Fetch services once we know location status
+  useEffect(() => {
+    if (locationStatus === "pending") return;
+
     const fetchData = async () => {
+      setLoading(true);
       try {
+        const params = new URLSearchParams();
+        if (locationStatus === "granted" && userLocation?.name) {
+          params.append("location", userLocation.name);
+        }
+
         const [categoriesRes, servicesRes] = await Promise.all([
-            api.get("/categories"),
-            api.get("/services")
+          api.get("/categories"),
+          api.get(`/services?${params.toString()}`),
         ]);
         setCategories(categoriesRes.data);
         setServices(servicesRes.data);
       } catch (error) {
-        console.error("Failed to fetch data", error);
-        // Fallback dummy data if API fails or is empty for dev
-        if (categories.length === 0) {
-            setCategories([
-                { _id: 1, name: "Cleaning", description: "Deep clean your home" },
-                { _id: 2, name: "Plumbing", description: "Fix leaks instantly" },
-                { _id: 3, name: "Electrician", description: "Wiring and repairs" },
-                { _id: 4, name: "Salon", description: "Beauty at home" },
-            ])
-        }
+        console.error("Failed to fetch home data", error);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [locationStatus, userLocation]);
 
-  // Auto-scroll banner every 3 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-        setCurrentImageIndex((prevIndex) => (prevIndex + 1) % bannerData.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [bannerData.length]);
+  const handleCategoryClick = (categoryId) => {
+    navigate(`/services?category=${categoryId}`);
+  };
 
   return (
-    <div className="text-white">
-      {/* Hero Section - Image Banner */}
-      <section className="relative h-[600px] overflow-hidden group">
-        {/* Image Slider */}
-        <div className="absolute inset-0 w-full h-full">
-             {bannerData.map((item, index) => (
-                <div 
-                    key={index}
-                    className={`absolute inset-0 w-full h-full transition-all duration-1000 ease-in-out transform ${
-                        currentImageIndex === index 
-                            ? 'opacity-100 scale-100' 
-                            : 'opacity-0 scale-105' 
-                    }`}
-                >
-                     <img 
-                        src={item.src} 
-                        alt={item.title} 
-                        className="w-full h-full object-cover"
-                    />
-                    {/* Modern Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-black/40 to-transparent"></div>
-                    
-                    {/* Text Content */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-                        <div className={`transition-all duration-1000 delay-300 transform ${currentImageIndex === index ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-                            <h1 className="text-5xl md:text-7xl font-black bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400 mb-4 tracking-tight drop-shadow-2xl">
-                                {item.title}
-                            </h1>
-                            <p className="text-xl md:text-2xl text-white/90 font-light tracking-wide max-w-2xl mx-auto drop-shadow-md">
-                                {item.subtitle}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            ))}
-        </div>
-        
-        {/* Slide Indicators */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-3 z-20">
-            {bannerData.map((_, index) => (
-                <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                        currentImageIndex === index ? 'w-8 bg-white' : 'bg-white/40 hover:bg-white/60'
-                    }`}
-                />
-            ))}
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-20 px-4 overflow-hidden">
+        {/* Background blobs */}
+        <div className="absolute top-20 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="container mx-auto text-center relative z-10">
+          <div className="inline-flex items-center gap-2 bg-blue-600/10 border border-blue-500/20 rounded-full px-4 py-2 mb-6">
+            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+            <span className="text-blue-400 text-sm font-medium">Trusted by 10,000+ customers</span>
+          </div>
+
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-tight">
+            Find the <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">right help</span>
+            <br />for any job
+          </h1>
+
+          <p className="text-gray-400 text-lg md:text-xl mb-10 max-w-2xl mx-auto">
+            Connect with verified service professionals near you. From home repairs
+            to personal services — we've got you covered.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/services"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-4 rounded-2xl text-lg transition-all duration-200 flex items-center justify-center gap-2 group"
+            >
+              Browse Services
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+            <Link
+              to="/become-partner"
+              className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold px-8 py-4 rounded-2xl text-lg transition-all duration-200"
+            >
+              Become a Provider
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Categories Grid (One Page Love Style) */}
-      <section className="py-20 bg-[#0a0a0a]">
+      {/* Trust Badges */}
+      <section className="py-8 border-y border-gray-800/50">
         <div className="container mx-auto px-4">
-          <div className="flex justify-between items-end mb-12 border-b border-gray-800 pb-6">
-            <div>
-              <h2 className="text-3xl font-bold bg-white text-transparent bg-clip-text">Categories</h2>
-              <p className="text-gray-400 mt-2">Explore our most popular services</p>
+          <div className="flex flex-wrap justify-center gap-8 md:gap-16 text-gray-500 text-sm">
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-green-500" />
+              <span>Verified Professionals</span>
             </div>
-            <Link to="/services" className="text-gray-400 hover:text-white transition-colors flex items-center font-medium">
-              View all <ArrowRight className="ml-1 w-4 h-4" />
+            <div className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-yellow-500" />
+              <span>Rated & Reviewed</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-blue-500" />
+              <span>On-Time Guarantee</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-purple-500" />
+              <span>Local Experts</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Categories Section */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-3xl font-bold text-white">Categories</h2>
+            <Link to="/services" className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1 transition-colors">
+              View all <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
           {loading ? (
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-64 bg-gray-900 rounded-xl animate-pulse"></div>
-                ))}
-             </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-[#111] h-28 rounded-2xl animate-pulse border border-white/5" />
+              ))}
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {categories.map((category) => (
-                <Link 
-                  to={`/services?category=${category._id}`} 
+                <button
                   key={category._id}
-                  className="group relative block bg-[#111] rounded-2xl overflow-hidden hover:-translate-y-2 transition-transform duration-300 border border-gray-800 hover:border-gray-700"
+                  onClick={() => handleCategoryClick(category._id)}
+                  className="group bg-[#111] hover:bg-[#161616] border border-gray-800 hover:border-blue-500/40 rounded-2xl p-4 text-center transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/5"
                 >
-                  <div className="aspect-w-16 aspect-h-10 bg-gray-900 relative">
-                     {/* Placeholder or actual image */}
-                     {category.image ? (
-                        <img src={category.image} alt={category.name} className="w-full h-64 object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                     ) : (
-                        <div className="w-full h-64 flex items-center justify-center bg-gray-800 text-gray-600">
-                            <span className="text-4xl font-bold opacity-30">{category.name[0]}</span>
-                        </div>
-                     )}
-                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent"></div>
-                  </div>
-                  
-                  <div className="absolute bottom-0 left-0 right-0 p-6">
-                    <h3 className="text-xl font-bold text-white mb-2">{category.name}</h3>
-                    <p className="text-sm text-gray-400 line-clamp-2">{category.description || "Top rated professionals."}</p>
-                    <div className="mt-4 flex items-center text-[#ff4d4d] text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
-                        Explore <ArrowRight className="ml-1 w-4 h-4" />
+                  {category.image ? (
+                    <img
+                      src={category.image}
+                      alt={category.name}
+                      className="w-14 h-14 object-cover rounded-xl mx-auto mb-3 group-hover:scale-105 transition-transform"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 bg-blue-600/20 rounded-xl mx-auto mb-3 flex items-center justify-center">
+                      <span className="text-2xl">🔧</span>
                     </div>
-                  </div>
-                </Link>
+                  )}
+                  <p className="text-white text-sm font-semibold group-hover:text-blue-400 transition-colors leading-tight">
+                    {category.name}
+                  </p>
+                </button>
               ))}
             </div>
           )}
@@ -179,65 +192,57 @@ const Home = () => {
       </section>
 
       {/* Services Section */}
-      <section className="py-20 bg-[#050505] border-t border-gray-900">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-end mb-12">
+      <section className="py-16 px-4 bg-gradient-to-b from-transparent to-blue-950/10">
+        <div className="container mx-auto">
+          <div className="flex justify-between items-end mb-8">
             <div>
-              <h2 className="text-3xl font-bold bg-white text-transparent bg-clip-text">Services</h2>
-              <p className="text-gray-400 mt-2">Book the best professionals for your needs</p>
+              <h2 className="text-3xl font-bold text-white">Services</h2>
+              {locationStatus === "granted" && userLocation?.name ? (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <MapPin className="w-4 h-4 text-blue-400" />
+                  <span className="text-blue-400 text-sm font-medium">{userLocation.name}</span>
+                  <span className="text-gray-500 text-sm">· Near you</span>
+                </div>
+              ) : locationStatus === "denied" ? (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <Globe className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-500 text-sm">Showing all services</span>
+                </div>
+              ) : (
+                <p className="text-gray-500 mt-2 text-sm">Detecting your location...</p>
+              )}
             </div>
-            <Link to="/services" className="text-gray-400 hover:text-white transition-colors flex items-center font-medium">
-              View all <ArrowRight className="ml-1 w-4 h-4" />
+            <Link to="/services" className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1 transition-colors">
+              See all <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
           {loading ? (
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="bg-[#111] h-80 rounded-2xl animate-pulse border border-white/5"></div>
-                ))}
-             </div>
-          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {services.map((service) => (
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="bg-[#111] h-80 rounded-2xl animate-pulse border border-white/5" />
+              ))}
+            </div>
+          ) : services.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {services.slice(0, 8).map((service) => (
                 <ServiceCard key={service._id} service={service} />
               ))}
             </div>
+          ) : (
+            <div className="text-center py-16">
+              <Globe className="w-12 h-12 text-gray-700 mx-auto mb-3" />
+              <p className="text-gray-500">
+                {locationStatus === "granted" && userLocation?.name
+                  ? `No services found near ${userLocation.name}. Showing all services.`
+                  : "No services available yet."}
+              </p>
+            </div>
           )}
         </div>
-      </section>
-
-      {/* Features/Stats Section */}
-      <section className="py-24 border-t border-gray-900 bg-[#050505]">
-          <div className="container mx-auto px-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-                  <div className="p-6">
-                      <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-500">
-                          <Shield className="w-8 h-8" />
-                      </div>
-                      <h3 className="text-xl font-bold mb-3">Safe & Verified</h3>
-                      <p className="text-gray-400 leading-relaxed">Every professional goes through a rigorous background check and skill verification process.</p>
-                  </div>
-                  <div className="p-6">
-                      <div className="w-16 h-16 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-purple-500">
-                          <Zap className="w-8 h-8" />
-                      </div>
-                      <h3 className="text-xl font-bold mb-3">Instant Booking</h3>
-                      <p className="text-gray-400 leading-relaxed">Book a service in less than 60 seconds. Our algorithm finds the best match for you instantly.</p>
-                  </div>
-                  <div className="p-6">
-                      <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-yellow-500">
-                          <Star className="w-8 h-8" />
-                      </div>
-                      <h3 className="text-xl font-bold mb-3">High Quality</h3>
-                      <p className="text-gray-400 leading-relaxed">Rated 4.8/5 by thousands of happy customers. We ensure top-notch service quality.</p>
-                  </div>
-              </div>
-          </div>
       </section>
     </div>
   );
 };
 
 export default Home;
-

@@ -17,7 +17,7 @@ const ProviderLanding = () => {
           
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <Link
-              to="/register"
+              to="/provider-register"
               className="px-8 py-4 bg-[#ff4d4d] hover:bg-[#ff3333] text-white rounded-full font-bold text-lg transition-all shadow-lg hover:shadow-red-500/30 flex items-center"
             >
               Start Earning Today
@@ -181,7 +181,7 @@ const ProviderLanding = () => {
             Join our community of successful professionals today. No commitments, no monthly fees.
           </p>
           <Link
-            to="/register"
+            to="/provider-register"
             className="inline-block px-10 py-5 bg-[#ff4d4d] hover:bg-[#ff3333] text-white rounded-full font-bold text-xl transition-all shadow-lg hover:shadow-red-500/30"
           >
             Become a Partner Now

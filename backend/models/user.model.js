@@ -19,6 +19,11 @@ const userSchema = new mongoose.Schema({
     enum: ["customer", "provider", "admin"],
     default: "customer",
   },
+  plan: {
+    type: String,
+    enum: ["free", "basic", "premium"],
+    default: "free",
+  },
   phone: {
     type: String,
   },
@@ -37,6 +42,16 @@ const userSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
+  },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  otp: {
+    type: String, // Storing hashed OTP
+  },
+  otpExpires: {
+    type: Date,
   },
 });
 

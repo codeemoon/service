@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ProviderRegister from "./pages/ProviderRegister";
 import Home from "./pages/Home";
 import ProviderLanding from "./pages/ProviderLanding";
 import RoleLandingPage from "./components/RoleLandingPage";
@@ -14,6 +15,7 @@ import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import MyBookings from "./pages/MyBookings";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Checkout from "./pages/Checkout";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 function App() {
   return (
@@ -26,6 +28,7 @@ function App() {
         <Route path="services/:id" element={<ServiceDetails />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
+        <Route path="provider-register" element={<ProviderRegister />} />
         
         {/* Protected Routes */}
         <Route 
@@ -68,6 +71,8 @@ function App() {
                 </ProtectedRoute>
             } 
         />
+        
+        <Route path="payment/success" element={<PaymentSuccess />} />
 
         
         {/* Placeholder for future routes */}

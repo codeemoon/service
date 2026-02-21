@@ -1,9 +1,8 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Menu, X, User, ChevronDown, MapPin, Search, Crosshair, Sun, Moon } from "lucide-react";
-import { useState , useEffect } from "react";
+import { Menu, X, User, ChevronDown, MapPin, Search, Sun, Moon } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../context/ThemeContext";
-import toast from "react-hot-toast";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -13,29 +12,24 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [userLocation, setUserLocation] = useState("");
-  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [locationQuery, setLocationQuery] = useState("");
+  // "search" | "location" — which mobile input is active
+  const [mobileMode, setMobileMode] = useState("search");
+  const locationDebounce = useRef(null);
 
+  // Live sync services page on location typing (debounced 400ms)
   useEffect(() => {
-    if (user) {
-        // Prioritize Zip Code -> District -> City
-        const locationStr = user.zipCode || user.district || user.city || "";
-        
-        if (locationStr) {
-            setUserLocation(locationStr);
-            
-            // "Always render those services ... near location"
-            // CHANGE: User wants to stay on Home page to see categories. 
-            // So we ONLY auto-redirect if they are ALREADY on the /services page and don't have a filter.
-            if (location.pathname === "/services") {
-                const params = new URLSearchParams(location.search);
-                if (!params.get("location")) {
-                     navigate(`/services?location=${encodeURIComponent(locationStr)}`);
-                }
-            }
-        }
-    }
-  }, [user, location.pathname]); 
+    if (locationDebounce.current) clearTimeout(locationDebounce.current);
+    if (!locationQuery.trim()) return;
+    locationDebounce.current = setTimeout(() => {
+      const params = new URLSearchParams(location.search);
+      params.set("location", locationQuery);
+      // Remove search if present so we don't double-filter
+      navigate(`/services?${params.toString()}`, { replace: true });
+    }, 400);
+    return () => clearTimeout(locationDebounce.current);
+  }, [locationQuery]);
+
 
   const handleLogout = () => {
     // Store role before logout clears user state
@@ -57,49 +51,14 @@ const Navbar = () => {
     e.preventDefault();
     const params = new URLSearchParams();
     if (searchQuery.trim()) params.append("search", searchQuery);
-    if (userLocation.trim()) params.append("location", userLocation);
+
     
     if (params.toString()) {
         navigate(`/services?${params.toString()}`);
     }
   };
 
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-        toast.error("Geolocation is not supported by your browser");
-        return;
-    }
 
-    setLoadingLocation(true);
-    navigator.geolocation.getCurrentPosition(async (position) => {
-        try {
-            const { latitude, longitude } = position.coords;
-            // Using OpenStreetMap Nominatim API for reverse geocoding
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-            const data = await response.json();
-            
-            // Extract district/city/town
-            const address = data.address;
-            const district = address.state_district || address.city || address.town || address.county || "";
-            
-            if (district) {
-                setUserLocation(district);
-                toast.success(`Location detected: ${district}`);
-            } else {
-                toast.error("Could not detect specific district");
-            }
-        } catch (error) {
-            console.error("Location error:", error);
-            toast.error("Failed to fetch location details");
-        } finally {
-            setLoadingLocation(false);
-        }
-    }, (error) => {
-        console.error("Geolocation error:", error);
-        toast.error("Unable to retrieve your location");
-        setLoadingLocation(false);
-    });
-  };
 
   const getDashboardLink = () => {
     if (!user) return "/login";
@@ -109,6 +68,7 @@ const Navbar = () => {
   };
 
   const isDashboardPage = ["/dashboard", "/provider", "/admin"].includes(location.pathname);
+  const isAuthPage = ["/login", "/register", "/provider-register"].includes(location.pathname);
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-[#0a0a0a] backdrop-blur-md border-b border-gray-200 dark:border-white/10 h-20 flex items-center transition-colors duration-300">
@@ -120,53 +80,45 @@ const Navbar = () => {
               <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                 <span className="text-white font-black text-xl">H</span>
               </div>
-              <span className="font-bold text-2xl text-gray-900 dark:text-white tracking-tight">HelpBro</span>
             </Link>
 
-            {/* Desktop Navigation - Location & Search */}
-            <div className="hidden md:flex items-center space-x-6">
+            {/* Desktop search + location */}
+            {!isAuthPage && (
+            <div className="hidden md:flex items-center space-x-3">
                 {/* Location Input */}
                 <div className="relative group">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
-                    <input 
-                        type="text" 
-                        placeholder="District..."
-                        value={userLocation}
-                        onChange={(e) => setUserLocation(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSearch(e)}
-                        className="bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-300 rounded-xl pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-[#151515] w-52 transition-all"
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
+                    <input
+                        type="text"
+                        placeholder="District / City..."
+                        value={locationQuery}
+                        onChange={(e) => setLocationQuery(e.target.value)}
+                        className="bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-300 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-[#151515] w-44 transition-all"
                     />
-                    <button 
-                        onClick={getCurrentLocation}
-                        className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white ${loadingLocation ? 'animate-spin' : ''}`}
-                        title="Use Current Location"
-                        type="button"
-                    >
-                        <Crosshair className="w-4 h-4" />
-                    </button>
                 </div>
 
                 {/* Search Input */}
                 <form onSubmit={handleSearch} className="relative group">
-                    <input 
-                        type="text" 
-                        placeholder="Search for services..." 
+                    <input
+                        type="text"
+                        placeholder="Search for services..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-300 rounded-xl pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-[#151515] w-80 transition-all"
+                        className="bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-300 rounded-xl pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-[#151515] w-72 transition-all"
                     />
-                    <button type="submit" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white group-focus-within:text-blue-500 transition-colors">
+                    <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white group-focus-within:text-blue-500 transition-colors">
                         <Search className="w-4 h-4" />
                     </button>
                 </form>
             </div>
+            )}
           </div>
 
           {/* Large Screen Auth Section */}
           <div className="hidden md:flex items-center space-x-6">
             {(!user || user.role === "customer") && (
                 <Link to="/become-partner" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors">
-                   Become a Partner
+                   Become a Service Provider
                 </Link>
             )}
 
@@ -179,7 +131,7 @@ const Navbar = () => {
                 {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             
-            {user ? (
+            {!isAuthPage && (user ? (
               <div className="flex items-center space-x-4">
                 {!isDashboardPage && user.role !== "customer" && (
                   <Link 
@@ -244,12 +196,83 @@ const Navbar = () => {
                   Sign Up
                 </Link>
               </div>
-            )}
+            ))}
           </div>
 
+          {/* Mobile Animated Search / Location Toggle */}
+          {!isAuthPage && (
+          <>
+          <div className="md:hidden flex-1 mx-3 relative overflow-hidden" style={{ height: '36px' }}>
+            {/* Search Input (slides in from left when mobileMode === 'search') */}
+            <form
+              onSubmit={(e) => { handleSearch(e); }}
+              className={`absolute inset-0 flex items-center transition-all duration-300 ease-in-out ${
+                mobileMode === 'search' ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'
+              }`}
+            >
+              <input
+                type="text"
+                placeholder="Search services..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-300 rounded-xl pl-4 pr-9 py-2 text-sm focus:outline-none focus:border-blue-500/50 transition-all"
+              />
+              <button type="submit" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-blue-500 transition-colors">
+                <Search className="w-4 h-4" />
+              </button>
+            </form>
+
+            {/* Location Input (slides in from right when mobileMode === 'location') */}
+            <div
+              className={`absolute inset-0 flex items-center transition-all duration-300 ease-in-out ${
+                mobileMode === 'location' ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
+              }`}
+            >
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 w-4 h-4 z-10" />
+              <input
+                type="text"
+                placeholder="District / City..."
+                value={locationQuery}
+                onChange={(e) => setLocationQuery(e.target.value)}
+                className="w-full bg-gray-100 dark:bg-[#111] border border-blue-500/40 text-gray-900 dark:text-gray-300 rounded-xl pl-9 pr-9 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all"
+              />
+              {locationQuery && (
+                <button
+                  type="button"
+                  onClick={() => { setLocationQuery(""); navigate("/services", { replace: true }); }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-400 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile: Toggle Icon (switches between Search and Location) */}
+          <button
+            onClick={() => setMobileMode(m => m === 'search' ? 'location' : 'search')}
+            className="md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-all duration-200"
+            title={mobileMode === 'search' ? 'Switch to Location' : 'Switch to Search'}
+          >
+            <div className="relative w-5 h-5">
+              <Search
+                className={`absolute inset-0 w-5 h-5 transition-all duration-300 ${
+                  mobileMode === 'location' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 rotate-90'
+                }`}
+              />
+              <MapPin
+                className={`absolute inset-0 w-5 h-5 text-blue-400 transition-all duration-300 ${
+                  mobileMode === 'search' ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-50 -rotate-90'
+                }`}
+              />
+            </div>
+          </button>
+          </>
+          )}
+
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center space-x-4">
-             <button
+          <div className="md:hidden flex items-center space-x-1">
+            <button
                 onClick={toggleTheme}
                 className="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
             >
@@ -270,16 +293,9 @@ const Navbar = () => {
         <div className="md:hidden absolute top-20 left-0 w-full bg-white dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 z-50">
           <div className="px-4 py-6 space-y-4">
             {/* Mobile Location & Search */}
+            {!isAuthPage && (
             <div className="space-y-4 mb-6">
-                <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
-                    <input 
-                        type="text" 
-                        value={userLocation}
-                        onChange={(e) => setUserLocation(e.target.value)}
-                        className="w-full bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-300 rounded-xl pl-10 pr-4 py-3 text-base focus:outline-none focus:border-gray-400 dark:focus:border-gray-600"
-                    />
-                </div>
+
                 <form onSubmit={(e) => { handleSearch(e); setIsOpen(false); }} className="relative">
                     <input 
                         type="text" 
@@ -293,8 +309,9 @@ const Navbar = () => {
                     </button>
                 </form>
             </div>
+            )}
             {(!user || user.role === "customer") && (
-              <Link to="/become-partner" onClick={() => setIsOpen(false)} className="block text-gray-700 dark:text-gray-300 text-lg font-medium">Become a Partner</Link>
+              <Link to="/become-partner" onClick={() => setIsOpen(false)} className="block text-gray-700 dark:text-gray-300 text-lg font-medium">Become a Service Provider</Link>
             )}
 
             {user ? (

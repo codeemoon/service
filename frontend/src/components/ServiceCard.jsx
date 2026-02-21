@@ -12,11 +12,11 @@ const ServiceCard = ({ service }) => {
             <img 
                 src={service.image} 
                 alt={service.name} 
-                className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500" 
+                className="w-full h-32 md:h-56 object-cover group-hover:scale-105 transition-transform duration-500" 
             />
         ) : (
-            <div className="w-full h-56 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                <span className="text-4xl font-bold text-gray-700 group-hover:text-gray-600 transition-colors">{service.name[0]}</span>
+            <div className="w-full h-32 md:h-56 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                <span className="text-2xl md:text-4xl font-bold text-gray-700 group-hover:text-gray-600 transition-colors">{service.name[0]}</span>
             </div>
         )}
         <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg flex items-center text-yellow-400 text-sm font-bold border border-white/10">
@@ -25,15 +25,15 @@ const ServiceCard = ({ service }) => {
         </div>
       </div>
       
-      <div className="p-5">
+      <div className="p-3 md:p-5">
         <div className="flex justify-between items-start mb-2">
-            <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-1">{service.name}</h3>
-            <span className="text-white font-bold bg-blue-600/20 text-blue-400 px-2 py-1 rounded text-xs">
+            <h3 className="text-sm md:text-lg font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-1">{service.name}</h3>
+            <span className="text-white font-bold bg-blue-600/20 text-blue-400 px-1.5 py-0.5 md:px-2 md:py-1 rounded text-[10px] md:text-xs">
                 ₹{service.price}
             </span>
         </div>
         
-        <p className="text-gray-400 text-sm mb-4 line-clamp-2 h-10">{service.description}</p>
+        <p className="hidden md:block text-gray-400 text-sm mb-4 line-clamp-2 h-10">{service.description}</p>
         
         <div className="flex items-center justify-between text-xs text-gray-500 border-t border-white/10 pt-4">
             <div className="flex items-center">

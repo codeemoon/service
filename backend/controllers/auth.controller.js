@@ -1,13 +1,16 @@
 const User = require("../models/user.model");
+const OTP = require("../models/otp.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const sendEmail = require("../utils/email");
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, phone, city, district, zipCode } = req.body;
+    const { name, email, password, role, phone, city, district, zipCode, plan } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
     }
 
     const existingUser = await User.findOne({ email });
@@ -18,19 +21,34 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
-      name,
+      name: name || email.split("@")[0],
       email,
       password: hashedPassword,
       role: role || "customer",
+      plan: role === "provider" ? (plan || "free") : "free",
       phone,
       city,
       district,
       zipCode,
+      isVerified: true, // Verification is now handled before registration
     });
 
     await newUser.save();
 
-    res.status(201).json({ message: "User registered successfully" });
+    res.status(201).json({ message: "User registered successfully." });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const checkEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ exists: true, message: "User already exists with this email" });
+    }
+    res.json({ exists: false });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -47,6 +65,10 @@ const login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    if (!user.isVerified) {
+      return res.status(401).json({ message: "Please verify your email via the OTP you received before logging in.", isVerified: false });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -151,4 +173,73 @@ const googleLogin = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe, googleLogin };
+const sendVerificationOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists with this email" });
+    }
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Hash the OTP before storing it
+    const hashedOtp = await bcrypt.hash(otp, 10);
+
+    // Check if an OTP already exists for this email, delete if so (to refresh)
+    await OTP.deleteMany({ email });
+
+    await OTP.create({
+      email,
+      otp: hashedOtp,
+    });
+
+    // Send the OTP via email
+    await sendEmail({
+      to: email,
+      subject: "Helpbro - Your Email Verification Code",
+      text: `Welcome to Helpbro! Your verification code is: ${otp}\nThis code will expire in 10 minutes.`,
+    });
+
+    res.status(200).json({ message: "Verification code sent successfully to your email." });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const verifyEmailOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    // Find the most recent OTP for the email
+    const otpRecord = await OTP.findOne({ email }).sort({ createdAt: -1 });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: "OTP has expired or is invalid. Please request a new one." });
+    }
+
+    const isMatch = await bcrypt.compare(otp, otpRecord.otp);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    // OTP matched successfully, clean up
+    await OTP.deleteMany({ email });
+
+    res.status(200).json({ message: "Email verified successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+module.exports = { register, checkEmail, login, getMe, googleLogin, sendVerificationOTP, verifyEmailOTP };

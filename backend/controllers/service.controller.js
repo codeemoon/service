@@ -6,9 +6,9 @@ const { uploadOnCloudinary } = require("../utils/cloudinary");
 // Create Service (Provider only)
 const createService = async (req, res) => {
   try {
-    const { name, description, price, duration, category } = req.body;
+    const { name, description, price, duration, category, startTime, endTime } = req.body;
 
-    if (!name || !description || !price || !duration || !category) {
+    if (!name || !description || !price || !duration || !category || !startTime || !endTime) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -36,6 +36,8 @@ const createService = async (req, res) => {
       price,
       duration,
       category,
+      startTime,
+      endTime,
       provider: req.user.id, // Set provider from auth token
       image: imageUrl, // Save Cloudinary URL
     });
@@ -51,7 +53,7 @@ const createService = async (req, res) => {
 const getAllServices = async (req, res) => {
   try {
     const { category, search, provider, location } = req.query;
-    let query = { availability: true };
+    let query = { availability: { $ne: false } };
 
     if (category) {
       query.category = category;
@@ -62,39 +64,30 @@ const getAllServices = async (req, res) => {
     }
 
     if (location) {
-        // location param could be anything now, but usually passed as a single string from Navbar
-        // For now, let's treat 'location' as a general search term against ALL location fields
-        
-        // Find providers who match City OR District OR ZipCode
-        const providersInLocation = await User.find({ 
-            $and: [
-                { role: "provider" },
-                {
-                    $or: [
-                        { city: { $regex: location, $options: "i" } },
-                        { district: { $regex: location, $options: "i" } },
-                        { zipCode: { $regex: location, $options: "i" } }
-                    ]
-                }
+      // Find providers who match City OR District OR ZipCode
+      const providersInLocation = await User.find({
+        $and: [
+          { role: "provider" },
+          {
+            $or: [
+              { city: { $regex: location, $options: "i" } },
+              { district: { $regex: location, $options: "i" } },
+              { zipCode: { $regex: location, $options: "i" } }
             ]
-        }).select("_id");
-        
-        const providerIds = providersInLocation.map(p => p._id);
-        
-        // If we already have a provider filter, we must ensure that specific provider is ALSO in the location
-        if (query.provider) {
-            // Check if the specific provider is in the list of local providers
-            const isProviderLocal = providerIds.some(id => id.toString() === query.provider);
-            if (!isProviderLocal) {
-                // If the specific provider isn't in the location, return no results
-                return res.json([]); 
-            }
-            // query.provider remains as is
-        } else {
-            // Filter services by these providers
-            query.provider = { $in: providerIds };
-        }
+          }
+        ]
+      }).select("_id");
+
+      const providerIds = providersInLocation.map(p => p._id);
+
+      if (query.provider) {
+        const isProviderLocal = providerIds.some(id => id.toString() === query.provider);
+        if (!isProviderLocal) return res.json([]);
+      } else {
+        query.provider = { $in: providerIds };
+      }
     }
+
 
     if (search) {
       query.name = { $regex: search, $options: "i" };
@@ -161,7 +154,7 @@ const getProviderServices = async (req, res) => {
 // Update Service (Provider only)
 const updateService = async (req, res) => {
   try {
-    const { name, description, price, duration, category } = req.body;
+    const { name, description, price, duration, category, startTime, endTime } = req.body;
     let service = await Service.findById(req.params.id);
 
     if (!service) {
@@ -177,6 +170,15 @@ const updateService = async (req, res) => {
     service.price = price || service.price;
     service.duration = duration || service.duration;
     service.category = category || service.category;
+    service.startTime = startTime || service.startTime;
+    service.endTime = endTime || service.endTime;
+
+    if (req.file) {
+        const uploadResponse = await uploadOnCloudinary(req.file.path);
+        if (uploadResponse) {
+            service.image = uploadResponse.url;
+        }
+    }
 
     await service.save();
     res.json(service);
@@ -185,11 +187,93 @@ const updateService = async (req, res) => {
   }
 };
 
+// Get Available slots for a service on a specific date
+const getServiceSlots = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date } = req.query; // Format YYYY-MM-DD
+
+    if (!date) {
+      return res.status(400).json({ message: "Date is required" });
+    }
+
+    const service = await Service.findById(id);
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    // Parse Service Start/End Times
+    const [startHour, startMinute] = service.startTime.split(":").map(Number);
+    const [endHour, endMinute] = service.endTime.split(":").map(Number);
+    
+    // Create Date objects for the service hours on the requested date
+    const serviceStart = new Date(date);
+    serviceStart.setHours(startHour, startMinute, 0, 0);
+
+    const serviceEnd = new Date(date);
+    serviceEnd.setHours(endHour, endMinute, 0, 0);
+
+    // Fetch existing bookings for this service on this date
+    // We need to match bookings that fall on this day.
+    // Assuming Bookings stored as specific Date objects.
+    const Booking = require("../models/booking.model");
+    
+    // Define the range for the entire day (00:00 to 23:59) to catch all bookings
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const bookings = await Booking.find({
+      service: id,
+      status: { $nin: ["cancelled", "rejected"] }, // Ignore cancelled/rejected
+      scheduledDate: { $gte: dayStart, $lte: dayEnd }
+    });
+
+    const bookedTimes = bookings.map(b => {
+        const d = new Date(b.scheduledDate);
+        return d.getTime(); // Return timestamp for easier comparison
+    });
+
+    // Generate Slots
+    let slots = [];
+    let currentSlot = new Date(serviceStart);
+
+    while (currentSlot < serviceEnd) {
+        const slotTime = currentSlot.getTime();
+        
+        // Check if this slot collides with any existing booking
+        // Simple collision: if the exact start time matches (Assuming fixed duration slots)
+        // For more complex duration overlaps, we'd need to check ranges.
+        // Given the requirement is likely simple fixed slots based on service duration:
+        
+        const isBooked = bookedTimes.includes(slotTime);
+        
+        if (!isBooked) {
+             // Format slot as "HH:mm"
+             const hours = currentSlot.getHours().toString().padStart(2, '0');
+             const minutes = currentSlot.getMinutes().toString().padStart(2, '0');
+             slots.push(`${hours}:${minutes}`);
+        }
+
+        // Increment by duration
+        currentSlot.setMinutes(currentSlot.getMinutes() + service.duration);
+    }
+
+    res.json(slots);
+
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
 module.exports = {
   createService,
   getServices: getAllServices,
   getServiceById,
   deleteService,
   getProviderServices,
-  updateService
+  updateService,
+  getServiceSlots
 };

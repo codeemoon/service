@@ -17,6 +17,14 @@ const serviceSchema = new mongoose.Schema({
     type: Number, // in minutes
     required: true,
   },
+  startTime: {
+    type: String, // Format "HH:mm" (24h)
+    required: true,
+  },
+  endTime: {
+    type: String, // Format "HH:mm" (24h)
+    required: true,
+  },
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category",

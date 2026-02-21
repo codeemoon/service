@@ -86,11 +86,15 @@ const verifyPayment = async (req, res) => {
         const parts = order_id.split("_");
         const bookingId = parts[2];
 
-        await Booking.findByIdAndUpdate(bookingId, { status: "completed" });
-
-        res.json({ message: "Payment successful (Demo Mode)", order: response.data });
+        await Booking.findByIdAndUpdate(bookingId, { status: "accepted" }); // Payment confirmed → provider must mark complete after delivering
+        // Redirect to Frontend Success Page
+        // Assuming Frontend runs on localhost:5173 (standard Vite port)
+        // In production, use process.env.FRONTEND_URL
+        const frontendUrl = "http://localhost:5173"; 
+        res.redirect(`${frontendUrl}/payment/success?bookingId=${bookingId}`);
     } else {
-        res.status(400).json({ message: "Payment pending or failed", status: orderStatus });
+        const frontendUrl = "http://localhost:5173"; 
+        res.redirect(`${frontendUrl}/payment/failed?bookingId=${order_id.split("_")[2]}`);
     }
 
   } catch (error) {
@@ -99,4 +103,52 @@ const verifyPayment = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, verifyPayment };
+const createPlanOrder = async (req, res) => {
+  try {
+    const { amount, name, email, phone, plan } = req.body;
+
+    if (!amount || !email || !name) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const orderId = `PLAN_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+    const payload = {
+      order_id: orderId,
+      order_amount: amount,
+      order_currency: "INR",
+      customer_details: {
+        customer_id: email.replace(/[^a-zA-Z0-9]/g, "_"), // Simple ID from email
+        customer_email: email,
+        customer_phone: phone || "9999999999",
+        customer_name: name
+      },
+      order_meta: {
+        return_url: `http://localhost:5173/register?order_id={order_id}&plan=${plan}`, // Redirect back to register
+      },
+      order_note: `${plan.toUpperCase()} Plan Subscription`,
+    };
+
+    const headers = {
+      "x-client-id": process.env.TEST_CASHFREE_APP_ID,
+      "x-client-secret": process.env.TEST_CASHFREE_SECRET_KEY,
+      "x-api-version": "2023-08-01",
+      "Content-Type": "application/json",
+    };
+
+    console.log("Plan Payment Payload:", JSON.stringify(payload, null, 2));
+
+    const response = await axios.post(CASHFREE_URL, payload, { headers });
+    res.json(response.data);
+
+  } catch (error) {
+    const errorDetails = error.response ? error.response.data : error.message;
+    console.error("Cashfree API Failure:", errorDetails);
+    res.status(500).json({ 
+      message: "Cashfree initiation failed", 
+      error: errorDetails
+    });
+  }
+};
+
+module.exports = { createOrder, verifyPayment, createPlanOrder };
