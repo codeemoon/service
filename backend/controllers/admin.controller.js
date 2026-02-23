@@ -49,7 +49,7 @@ const getAdminStats = async (req, res) => {
 const getProviders = async (req, res) => {
   try {
     const providers = await User.find({ role: "provider" })
-      .select("name email phone city district profileImage createdAt")
+      .select("name email phone city area profileImage createdAt")
       .lean();
 
     const providersWithStats = await Promise.all(

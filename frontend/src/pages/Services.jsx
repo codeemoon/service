@@ -69,20 +69,19 @@ const Services = () => {
   }, [services, sortKey, priceRange]);
 
   return (
-    <div className="min-h-screen pt-24 pb-12">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen pt-[76px] pb-12 bg-gray-50 dark:bg-[#0a0a0a]">
+      <div className="container mx-auto px-4 max-w-6xl">
         {/* Header & Search */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-3 gap-4">
             <div>
-                <h1 className="text-3xl font-bold text-white mb-2">Find a Professional</h1>
-                <p className="text-gray-400">Browse top-rated experts for your needs</p>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Find a Professional</h1>
             </div>
             
             <div className="relative w-full md:w-96">
                 <input
                     type="text"
                     placeholder="Search for services..."
-                    className="w-full bg-[#111] border border-white/10 rounded-xl px-5 py-3 pl-12 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-3 pl-12 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 transition-colors shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={(e) => {
@@ -102,14 +101,14 @@ const Services = () => {
         </div>
 
         {/* Filter & Sort Bar */}
-        <div className="flex flex-wrap items-center gap-3 mb-8">
+        <div className="flex flex-wrap items-center gap-3 mb-6">
 
           {/* Price Range Dropdown */}
           <div className="relative">
             <select
               value={priceRange}
               onChange={(e) => setPriceRange(e.target.value)}
-              className="appearance-none bg-[#111] border border-gray-800 text-gray-300 text-sm rounded-xl pl-4 pr-9 py-2.5 focus:outline-none focus:border-blue-500 cursor-pointer hover:border-gray-600 transition-colors"
+              className="appearance-none bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded-xl pl-4 pr-9 py-2.5 focus:outline-none focus:border-blue-500 cursor-pointer hover:border-gray-300 dark:hover:border-gray-700 transition-colors shadow-sm"
             >
               {PRICE_RANGES.map(r => (
                 <option key={r.key} value={r.key}>{r.label}</option>
@@ -123,7 +122,7 @@ const Services = () => {
             <select
               value={sortKey}
               onChange={(e) => setSortKey(e.target.value)}
-              className="appearance-none bg-[#111] border border-gray-800 text-gray-300 text-sm rounded-xl pl-4 pr-9 py-2.5 focus:outline-none focus:border-blue-500 cursor-pointer hover:border-gray-600 transition-colors"
+              className="appearance-none bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded-xl pl-4 pr-9 py-2.5 focus:outline-none focus:border-blue-500 cursor-pointer hover:border-gray-300 dark:hover:border-gray-700 transition-colors shadow-sm"
             >
               {SORT_OPTIONS.map(o => (
                 <option key={o.key} value={o.key}>{o.label}</option>
@@ -150,39 +149,39 @@ const Services = () => {
 
         {/* Content */}
         {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                    <div key={i} className="bg-[#111] h-80 rounded-2xl animate-pulse border border-white/5"></div>
+                    <div key={i} className="bg-white dark:bg-[#111] h-80 rounded-2xl animate-pulse border border-gray-200 dark:border-gray-800 shadow-sm"></div>
                 ))}
             </div>
         ) : sortedServices.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
                 {sortedServices.map(service => (
                     <ServiceCard key={service._id} service={service} />
                 ))}
             </div>
         ) : (
-            <div className="text-center py-20">
-                <div className="bg-[#111] inline-flex p-5 rounded-full mb-5 border border-white/5">
-                    <Filter className="w-8 h-8 text-gray-600" />
+            <div className="text-center py-20 bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-3xl mt-6 shadow-sm">
+                <div className="bg-gray-100 dark:bg-gray-900 inline-flex p-5 rounded-full mb-5 shadow-inner">
+                    <Filter className="w-8 h-8 text-gray-400 dark:text-gray-600" />
                 </div>
                 {locationParam ? (
                   <>
-                    <h3 className="text-xl font-bold text-white mb-2">
-                      No services in <span className="text-blue-400">{locationParam}</span>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                      No services in <span className="text-blue-500 dark:text-blue-400">{locationParam}</span>
                     </h3>
-                    <p className="text-gray-500 mb-6">There are no service providers in this location yet.</p>
+                    <p className="text-gray-500 dark:text-gray-400 mb-6">There are no service providers in this location yet.</p>
                     <button
                       onClick={() => navigate("/services")}
-                      className="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 transition-colors font-medium"
                     >
                       Show all services instead
                     </button>
                   </>
                 ) : (
                   <>
-                    <h3 className="text-xl font-bold text-white mb-2">No services found</h3>
-                    <p className="text-gray-500">Try adjusting your search or filters.</p>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No services found</h3>
+                    <p className="text-gray-500 dark:text-gray-400">Try adjusting your search or filters.</p>
                   </>
                 )}
             </div>

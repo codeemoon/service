@@ -27,6 +27,11 @@ const AdminDashboard = () => {
   const [providerServices, setProviderServices] = useState([]);
   const [loadingProviderServices, setLoadingProviderServices] = useState(false);
 
+  // Locations State
+  const [locations, setLocations] = useState([]);
+  const [newLocationName, setNewLocationName] = useState("");
+  const [addingLocation, setAddingLocation] = useState(false);
+
   useEffect(() => {
     fetchStats();
   }, []);
@@ -35,6 +40,7 @@ const AdminDashboard = () => {
     if (activeTab === "categories") fetchCategories();
     if (activeTab === "bookings") fetchAllBookings();
     if (activeTab === "providers") fetchAllProviders();
+    if (activeTab === "locations") fetchLocations();
   }, [activeTab]);
 
   const fetchStats = async () => {
@@ -54,6 +60,15 @@ const AdminDashboard = () => {
       setCategories(data);
     } catch {
       toast.error("Failed to load categories");
+    }
+  };
+
+  const fetchLocations = async () => {
+    try {
+      const { data } = await api.get("/locations");
+      setLocations(data);
+    } catch {
+      toast.error("Failed to load locations");
     }
   };
 
@@ -143,6 +158,43 @@ const AdminDashboard = () => {
     setShowCategoryModal(true);
   };
 
+  const handleAddLocation = async (e) => {
+    e.preventDefault();
+    if (!newLocationName.trim()) return;
+    setAddingLocation(true);
+    try {
+      await api.post("/locations", { name: newLocationName });
+      toast.success("Location added!");
+      setNewLocationName("");
+      fetchLocations();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to add location");
+    } finally {
+      setAddingLocation(false);
+    }
+  };
+
+  const handleToggleLocation = async (id) => {
+    try {
+      await api.patch(`/locations/${id}/toggle`);
+      toast.success("Location status updated!");
+      fetchLocations();
+    } catch {
+      toast.error("Failed to update location");
+    }
+  };
+
+  const handleDeleteLocation = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this location?")) return;
+    try {
+      await api.delete(`/locations/${id}`);
+      toast.success("Location deleted!");
+      fetchLocations();
+    } catch {
+      toast.error("Failed to delete location");
+    }
+  };
+
   const handleUpdateBookingStatus = async (bookingId, newStatus) => {
     try {
       await api.put(`/bookings/${bookingId}/status`, { status: newStatus });
@@ -197,6 +249,14 @@ const AdminDashboard = () => {
           >
             <Users className="w-5 h-5" />
             <span>Service Providers</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab("locations")} 
+            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === "locations" ? "bg-blue-600/10 text-blue-500" : "text-gray-400 hover:bg-gray-800/50 hover:text-gray-200"}`}
+          >
+            <MapPin className="w-5 h-5" />
+            <span>Areas</span>
           </button>
         </nav>
       </aside>
@@ -378,9 +438,9 @@ const AdminDashboard = () => {
                       <span className="ml-auto text-green-400 font-bold text-sm">₹{provider.walletBalance?.toLocaleString('en-IN') ?? '0'}</span>
                     </div>
                     <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-                      {(provider.city || provider.district) && (
+                      {(provider.city || provider.area) && (
                         <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> {provider.district || provider.city}
+                          <MapPin className="w-3 h-3" /> {provider.area || provider.city}
                         </span>
                       )}
                       {provider.phone && (
@@ -396,6 +456,55 @@ const AdminDashboard = () => {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Locations Tab */}
+        {activeTab === "locations" && (
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-6">Manage Areas (Raipur)</h2>
+            <div className="bg-[#111] border border-gray-800 rounded-2xl p-6 mb-8 max-w-xl shadow-lg shadow-black/50">
+              <form onSubmit={handleAddLocation} className="flex gap-4">
+                <input
+                  type="text"
+                  placeholder="Enter new area..."
+                  value={newLocationName}
+                  onChange={(e) => setNewLocationName(e.target.value)}
+                  className="flex-1 bg-[#0a0a0a] border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-colors"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={addingLocation}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" /> Add
+                </button>
+              </form>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {locations.map((loc) => (
+                <div key={loc._id} className="bg-[#111] border border-gray-800 rounded-xl p-5 flex items-center justify-between hover:border-gray-700 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <MapPin className={`w-5 h-5 ${loc.isActive ? 'text-blue-500' : 'text-gray-600'}`} />
+                    <span className={`font-bold ${loc.isActive ? 'text-white' : 'text-gray-500 line-through'}`}>{loc.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleToggleLocation(loc._id)}
+                      className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${loc.isActive ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20' : 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20'}`}
+                    >
+                      {loc.isActive ? 'Disable' : 'Enable'}
+                    </button>
+                    <button onClick={() => handleDeleteLocation(loc._id)} className="p-1.5 text-gray-500 hover:bg-red-500/10 hover:text-red-500 rounded-lg transition">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {locations.length === 0 && <div className="text-gray-500 text-center py-12">No areas added yet. Add one above!</div>}
           </div>
         )}
 
@@ -416,7 +525,7 @@ const AdminDashboard = () => {
                   <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-500">
                     <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{selectedProvider.email}</span>
                     {selectedProvider.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{selectedProvider.phone}</span>}
-                    {(selectedProvider.city || selectedProvider.district) && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{selectedProvider.district || selectedProvider.city}</span>}
+                    {(selectedProvider.city || selectedProvider.area) && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{selectedProvider.area || selectedProvider.city}</span>}
                   </div>
                 </div>
                 <button onClick={() => setSelectedProvider(null)} className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition">

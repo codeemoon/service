@@ -73,7 +73,7 @@ const ProviderRegister = () => {
     role: "provider",
     phone: "",
     city: "",
-    district: "",
+    area: "",
     zipCode: "",
     plan: "free",
   });
@@ -154,7 +154,7 @@ const ProviderRegister = () => {
     if (e) e.preventDefault();
     
     // Validate required fields for Step 1
-    if (!formData.name || !formData.email || !formData.password || !formData.city || !formData.district || !formData.zipCode) {
+    if (!formData.name || !formData.email || !formData.password || !formData.city || !formData.area || !formData.zipCode) {
       return toast.error("Please fill all required fields");
     }
 
@@ -323,13 +323,13 @@ const ProviderRegister = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">District</label>
+                  <label className="block text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Area</label>
                   <div className="relative group">
                     <Map className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
                     <input type="text" required
                       className="w-full pl-9 pr-3 py-4 bg-black/50 border border-gray-800 rounded-2xl focus:outline-none focus:border-blue-500/50 focus:bg-black text-white transition-all shadow-inner text-sm"
-                      placeholder="Andheri" value={formData.district}
-                      onChange={(e) => setFormData({ ...formData, district: e.target.value })} />
+                      placeholder="Andheri" value={formData.area}
+                      onChange={(e) => setFormData({ ...formData, area: e.target.value })} />
                   </div>
                 </div>
                 <div className="space-y-2">

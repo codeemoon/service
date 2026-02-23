@@ -3,16 +3,16 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="bg-[#050505] border-t border-gray-900 text-gray-400 py-16 relative overflow-hidden">
+    <footer className="bg-[#050505] border-t border-gray-900 text-gray-400 py-10 relative overflow-hidden">
       {/* Background Gradients */}
       <div className="absolute bottom-0 left-0 w-full h-[500px] bg-gradient-to-t from-blue-900/10 to-transparent pointer-events-none"></div>
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-600/10 blur-[100px] rounded-full pointer-events-none"></div>
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           
           {/* Brand Section */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             <Link to="/" className="text-2xl font-bold text-white flex items-center space-x-2">
               <span className="bg-blue-600 w-8 h-8 rounded-lg flex items-center justify-center text-white">H</span>
               <span>HelpBro</span>
@@ -38,8 +38,8 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-bold text-white mb-6">Quick Links</h3>
-            <ul className="space-y-4 text-sm">
+            <h3 className="text-lg font-bold text-white mb-4">Quick Links</h3>
+            <ul className="space-y-2 text-sm">
               <li>
                 <Link to="/" className="hover:text-blue-500 transition-colors">Home</Link>
               </li>
@@ -57,8 +57,8 @@ const Footer = () => {
 
           {/* Legal / Policy */}
           <div>
-            <h3 className="text-lg font-bold text-white mb-6">Company</h3>
-            <ul className="space-y-4 text-sm">
+            <h3 className="text-lg font-bold text-white mb-4">Company</h3>
+            <ul className="space-y-2 text-sm">
               <li>
                 <a href="#" className="hover:text-blue-500 transition-colors">About Us</a>
               </li>
@@ -75,9 +75,9 @@ const Footer = () => {
           </div>
 
           {/* Contact Info */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-bold text-white mb-6">Get in Touch</h3>
-            <ul className="space-y-4 text-sm">
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-white mb-4">Get in Touch</h3>
+            <ul className="space-y-3 text-sm">
               <li className="flex items-start space-x-3">
                 <MapPin className="shrink-0 text-blue-500" size={18} />
                 <span>123 Innovation Drive, Tech Valley, CA 94043</span>

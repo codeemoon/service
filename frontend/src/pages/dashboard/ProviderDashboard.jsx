@@ -178,17 +178,17 @@ const ProviderDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen pt-24 pb-12 bg-gray-50 dark:bg-[#0a0a0a]">
+      <div className="container mx-auto px-4 max-w-6xl">
         <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-white">Provider Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Provider Dashboard</h1>
             <button onClick={handleDeleteAccount} className="text-red-500 hover:text-red-400 font-bold text-sm bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/20 hover:bg-red-500/20 transition">
                 Delete Account
             </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-2 mb-8 border-b border-gray-800">
+        <div className="flex space-x-2 mb-8 border-b border-gray-200 dark:border-gray-800">
           <TabButton active={activeTab === "bookings"} onClick={() => setActiveTab("bookings")} icon={<Calendar className="w-4 h-4" />} label="Booking Requests" />
           <TabButton active={activeTab === "services"} onClick={() => setActiveTab("services")} icon={<Briefcase className="w-4 h-4" />} label="My Services" />
         </div>
@@ -217,21 +217,18 @@ const ProviderDashboard = () => {
                     <>₹{walletData.walletBalance.toLocaleString('en-IN')}</>
                   )}
                 </p>
-                <p className="text-gray-600 text-xs mt-1">
-                  You earn <span className="text-green-500 font-bold">{Math.round((walletData.rate ?? 0.7) * 100)}%</span> of every completed booking
-                </p>
               </div>
             </div>
 
             {loading ? (
-              <div className="text-white">Loading...</div>
+              <div className="text-gray-900 dark:text-white">Loading...</div>
             ) : bookings.length > 0 ? (
               <div className="space-y-4">
                 {bookings.map((booking) => (
-                  <div key={booking._id} className="bg-[#111] border border-gray-800 rounded-xl p-6 flex flex-col md:flex-row justify-between items-center">
+                  <div key={booking._id} className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-center shadow-sm">
                     <div>
-                      <h3 className="text-xl font-bold text-white mb-1">{booking.service?.name}</h3>
-                      <p className="text-gray-400 text-sm mb-2">Customer: <span className="text-white">{booking.customer?.name}</span></p>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{booking.service?.name}</h3>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">Customer: <span className="text-gray-900 dark:text-white">{booking.customer?.name}</span></p>
                       <div className="flex items-center text-gray-500 text-sm">
                         <Clock className="w-4 h-4 mr-1" />
                         {new Date(booking.scheduledDate).toLocaleString()}
@@ -271,8 +268,8 @@ const ProviderDashboard = () => {
         {activeTab === "services" && (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white">My Services</h2>
-              <button onClick={() => { setEditingService(null); setServiceForm({ name: "", description: "", price: "", duration: "", category: "", startTime: "09:00", endTime: "17:00", image: null }); setShowServiceModal(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 transition flex items-center">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Services</h2>
+              <button onClick={() => { setEditingService(null); setServiceForm({ name: "", description: "", price: "", duration: "", category: "", startTime: "09:00", endTime: "17:00", image: null }); setShowServiceModal(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 transition flex items-center shadow-md shadow-blue-500/20">
                 <Plus className="w-5 h-5 mr-2" /> Add Service
               </button>
             </div>
@@ -282,26 +279,26 @@ const ProviderDashboard = () => {
             ) : myServices.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {myServices.map(service => (
-                  <div key={service._id} className="bg-[#111] border border-gray-800 rounded-xl overflow-hidden">
+                  <div key={service._id} className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm hover:border-blue-500/30 transition-all hover:shadow-md">
                     <img src={service.image || "https://via.placeholder.com/300"} alt={service.name} className="w-full h-48 object-cover" />
                     <div className="p-4">
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-xl font-bold text-white">{service.name}</h3>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{service.name}</h3>
                         <div className="flex space-x-2">
                           <button onClick={() => handleEditService(service)} className="p-2 text-blue-500 hover:bg-blue-500/10 rounded-lg transition">
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button onClick={() => handleDeleteService(service._id)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition">
+                          <button onClick={() => handleDeleteService(service._id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
-                      <p className="text-gray-400 text-sm mt-1 line-clamp-2">{service.description}</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mt-1 line-clamp-2">{service.description}</p>
                       <div className="flex justify-between items-center mt-4">
                         <span className="text-blue-500 font-bold">${service.price}</span>
                         <span className="text-gray-500 text-xs">{service.duration} mins</span>
                       </div>
-                      <div className="mt-2 text-xs text-gray-600">
+                      <div className="mt-2 text-xs text-gray-500 dark:text-gray-600">
                         Category: {service.category?.name || "Unknown"} <br/>
                         Hours: {service.startTime} - {service.endTime}
                       </div>
@@ -318,21 +315,21 @@ const ProviderDashboard = () => {
         {/* Service Modal */}
         {showServiceModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowServiceModal(false)}></div>
-            <div className="bg-[#111] border border-gray-800 rounded-2xl w-full max-w-lg relative z-10 p-6 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold text-white mb-6">{editingService ? "Edit Service" : "Add New Service"}</h2>
+            <div className="absolute inset-0 bg-gray-900/60 dark:bg-black/80 backdrop-blur-sm" onClick={() => setShowServiceModal(false)}></div>
+            <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-3xl w-full max-w-lg relative z-10 p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-xl">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{editingService ? "Edit Service" : "Add New Service"}</h2>
               
               <form onSubmit={handleSaveService} className="space-y-4">
                 {/* 1. Name */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-1">Service Name</label>
-                  <input type="text" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={serviceForm.name} onChange={(e) => setServiceForm({...serviceForm, name: e.target.value})} required />
+                  <label className="block text-gray-700 dark:text-gray-400 text-sm mb-1 font-medium">Service Name</label>
+                  <input type="text" className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" value={serviceForm.name} onChange={(e) => setServiceForm({...serviceForm, name: e.target.value})} required />
                 </div>
                 
                 {/* 2. Category */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-1">Category</label>
-                  <select className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={serviceForm.category} onChange={(e) => setServiceForm({...serviceForm, category: e.target.value})} required>
+                  <label className="block text-gray-700 dark:text-gray-400 text-sm mb-1 font-medium">Category</label>
+                  <select className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" value={serviceForm.category} onChange={(e) => setServiceForm({...serviceForm, category: e.target.value})} required>
                     <option value="">Select Category</option>
                     {categories.map(cat => (
                       <option key={cat._id} value={cat._id}>{cat.name}</option>
@@ -343,17 +340,17 @@ const ProviderDashboard = () => {
                 {/* 3. Start Time & End Time */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-gray-400 text-sm mb-1">Start Time</label>
+                    <label className="block text-gray-700 dark:text-gray-400 text-sm mb-1 font-medium">Start Time</label>
                     <div className="relative">
-                        <Clock className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
-                        <input type="time" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-blue-500 outline-none" value={serviceForm.startTime} onChange={(e) => setServiceForm({...serviceForm, startTime: e.target.value})} required />
+                        <Clock className="absolute left-3 top-3.5 text-gray-500 w-5 h-5"/>
+                        <input type="time" className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl p-3 pl-10 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" value={serviceForm.startTime} onChange={(e) => setServiceForm({...serviceForm, startTime: e.target.value})} required />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-gray-400 text-sm mb-1">End Time</label>
+                    <label className="block text-gray-700 dark:text-gray-400 text-sm mb-1 font-medium">End Time</label>
                     <div className="relative">
-                        <Clock className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
-                        <input type="time" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 pl-10 text-white focus:border-blue-500 outline-none" value={serviceForm.endTime} onChange={(e) => setServiceForm({...serviceForm, endTime: e.target.value})} required />
+                        <Clock className="absolute left-3 top-3.5 text-gray-500 w-5 h-5"/>
+                        <input type="time" className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl p-3 pl-10 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" value={serviceForm.endTime} onChange={(e) => setServiceForm({...serviceForm, endTime: e.target.value})} required />
                     </div>
                   </div>
                 </div>
@@ -361,25 +358,25 @@ const ProviderDashboard = () => {
                 {/* 4. Price & Duration */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-gray-400 text-sm mb-1">Price ($)</label>
-                    <input type="number" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={serviceForm.price} onChange={(e) => setServiceForm({...serviceForm, price: e.target.value})} required />
+                    <label className="block text-gray-700 dark:text-gray-400 text-sm mb-1 font-medium">Price (₹)</label>
+                    <input type="number" className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" value={serviceForm.price} onChange={(e) => setServiceForm({...serviceForm, price: e.target.value})} required />
                   </div>
                   <div>
-                    <label className="block text-gray-400 text-sm mb-1">Duration (mins)</label>
-                    <input type="number" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={serviceForm.duration} onChange={(e) => setServiceForm({...serviceForm, duration: e.target.value})} required />
+                    <label className="block text-gray-700 dark:text-gray-400 text-sm mb-1 font-medium">Duration (mins)</label>
+                    <input type="number" className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" value={serviceForm.duration} onChange={(e) => setServiceForm({...serviceForm, duration: e.target.value})} required />
                   </div>
                 </div>
 
                 {/* 5. Description */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-1">Description</label>
-                  <textarea className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-white focus:border-blue-500 outline-none" value={serviceForm.description} onChange={(e) => setServiceForm({...serviceForm, description: e.target.value})} required />
+                  <label className="block text-gray-700 dark:text-gray-400 text-sm mb-1 font-medium">Description</label>
+                  <textarea className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" value={serviceForm.description} onChange={(e) => setServiceForm({...serviceForm, description: e.target.value})} required />
                 </div>
 
                 {/* 6. Image */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-1">Service Image</label>
-                  <div className="border border-gray-700 border-dashed rounded-xl overflow-hidden cursor-pointer hover:border-blue-500 transition relative group">
+                  <label className="block text-gray-700 dark:text-gray-400 text-sm mb-1 font-medium">Service Image</label>
+                  <div className="border border-gray-300 dark:border-gray-700 border-dashed rounded-xl overflow-hidden cursor-pointer hover:border-blue-500 transition relative group bg-gray-50 dark:bg-transparent">
                     <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10"
                       onChange={async (e) => {
                         const file = e.target.files[0];
@@ -418,17 +415,17 @@ const ProviderDashboard = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="p-8 text-gray-500 flex flex-col items-center gap-2">
-                        <ImageIcon className="w-10 h-10 opacity-40" />
-                        <span className="text-sm">Click to upload image</span>
+                      <div className="p-8 text-gray-400 flex flex-col items-center gap-2">
+                        <ImageIcon className="w-10 h-10 opacity-40 text-gray-400" />
+                        <span className="text-sm font-medium">Click to upload image</span>
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div className="flex justify-end space-x-3 mt-6">
-                  <button type="button" onClick={() => setShowServiceModal(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancel</button>
-                  <button type="submit" disabled={savingService} className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition flex items-center">
+                  <button type="button" onClick={() => setShowServiceModal(false)} className="px-5 py-2.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">Cancel</button>
+                  <button type="submit" disabled={savingService} className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition flex items-center shadow-lg shadow-blue-500/30">
                     {savingService ? <Loader className="animate-spin" /> : editingService ? "Update" : "Create"}
                   </button>
                 </div>
@@ -442,7 +439,7 @@ const ProviderDashboard = () => {
 };
 
 const TabButton = ({ active, onClick, icon, label }) => (
-  <button onClick={onClick} className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors border-b-2 ${active ? "text-blue-500 border-blue-500" : "text-gray-500 border-transparent hover:text-gray-300"}`}>
+  <button onClick={onClick} className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors border-b-2 ${active ? "text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500" : "text-gray-500 border-transparent hover:text-gray-900 dark:hover:text-gray-300"}`}>
     {icon}
     <span>{label}</span>
   </button>

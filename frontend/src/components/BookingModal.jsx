@@ -91,40 +91,40 @@ const BookingModal = ({ service, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="bg-[#111] border border-gray-800 w-full max-w-lg rounded-2xl shadow-2xl relative z-10 overflow-hidden">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
+      <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 w-full max-w-lg rounded-3xl shadow-2xl relative z-10 overflow-hidden">
         
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-800">
-          <h3 className="text-xl font-bold text-white">Book Service</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-            <X size={24} />
+        <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Book Service</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors bg-gray-100 dark:bg-gray-800 p-2 rounded-full">
+            <X size={20} className="stroke-[3]" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-6">
+        <div className="p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto custom-scrollbar">
           {step === 1 && (
-              <div className="space-y-4">
+              <div className="space-y-3">
                {/* Detail Header */}
-                <div className="bg-blue-900/20 border border-blue-500/20 p-4 rounded-xl flex items-start space-x-4">
-                  {service.image && <img src={service.image} alt="" className="w-16 h-16 rounded-lg object-cover" />}
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-500/20 p-4 rounded-2xl flex items-start space-x-4">
+                  {service.image && <img src={service.image} alt="" className="w-16 h-16 rounded-xl object-cover shadow-sm" />}
                   <div>
-                    <h4 className="text-white font-bold">{service.name}</h4>
-                    <p className="text-blue-400 font-bold">₹{service.price}</p>
-                    <p className="text-gray-500 text-xs mt-1">Duration: {service.duration} mins</p>
+                    <h4 className="text-gray-900 dark:text-white font-bold">{service.name}</h4>
+                    <p className="text-blue-600 dark:text-blue-400 font-bold">₹{service.price}</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">Duration: {service.duration} mins</p>
                   </div>
                 </div>
 
                 {/* Date Selection */}
                 <div>
-                  <label className="block text-gray-400 text-sm font-medium mb-2">Select Date</label>
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Select Date</label>
                   <div className="relative">
-                      <Calendar className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
+                      <Calendar className="absolute left-4 top-3.5 text-gray-400 dark:text-gray-500 w-5 h-5"/>
                       <input 
                           type="date" 
                           min={new Date().toISOString().split('T')[0]} // Disable past dates
-                          className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500"
+                          className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl py-3 pl-12 pr-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm"
                           value={formData.date}
                           onChange={(e) => {
                             setFormData({...formData, date: e.target.value, time: ""}); // Reset time when date changes
@@ -136,20 +136,22 @@ const BookingModal = ({ service, onClose }) => {
 
                 {/* Slot Selection */}
                 {formData.date && (
-                    <div>
-                        <label className="block text-gray-400 text-sm font-medium mb-2">Select Time Slot</label>
+                    <div className="animate-fade-in">
+                        <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Select Time Slot</label>
                         {loadingSlots ? (
-                            <div className="text-gray-500 text-sm text-center py-2">Loading slots...</div>
+                            <div className="text-gray-500 text-sm text-center py-4 flex items-center justify-center">
+                                <Loader className="w-4 h-4 mr-2 animate-spin" /> Loading slots...
+                            </div>
                         ) : slots.length > 0 ? (
-                            <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-48 overflow-y-auto custom-scrollbar p-1">
                                 {slots.map(slot => (
                                     <button
                                         key={slot}
                                         onClick={() => setFormData({...formData, time: slot})}
-                                        className={`py-2 px-1 rounded-lg text-sm font-medium transition-all
+                                        className={`py-2 px-2 rounded-xl text-sm font-bold transition-all
                                             ${formData.time === slot 
-                                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30" 
-                                                : "bg-[#0a0a0a] border border-gray-700 text-gray-300 hover:border-blue-500"
+                                                ? "bg-blue-600 text-white shadow-md shadow-blue-500/30 scale-105 border-transparent" 
+                                                : "bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400"
                                             }
                                         `}
                                     >
@@ -158,7 +160,7 @@ const BookingModal = ({ service, onClose }) => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-red-400 text-sm text-center py-2 bg-red-900/10 rounded-lg">
+                            <div className="text-red-600 dark:text-red-400 text-sm text-center py-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30 font-medium">
                                 No slots available for this date.
                             </div>
                         )}
@@ -168,11 +170,11 @@ const BookingModal = ({ service, onClose }) => {
 
                 {/* Address */}
                 <div>
-                  <label className="block text-gray-400 text-sm font-medium mb-2">Address</label>
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Address</label>
                   <div className="relative">
-                      <MapPin className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
+                      <MapPin className="absolute left-4 top-3.5 text-gray-400 dark:text-gray-500 w-5 h-5"/>
                       <textarea 
-                          className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 min-h-[80px]"
+                          className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl py-2 pl-12 pr-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm min-h-[80px] resize-none"
                           placeholder="Enter your full address..."
                           value={formData.address}
                           onChange={(e) => setFormData({...formData, address: e.target.value})}
@@ -182,11 +184,11 @@ const BookingModal = ({ service, onClose }) => {
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-gray-400 text-sm font-medium mb-2">Additional Notes (Optional)</label>
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Additional Notes <span className="text-gray-400 text-xs font-normal">(Optional)</span></label>
                   <div className="relative">
-                      <CreditCard className="absolute left-3 top-3 text-gray-500 w-5 h-5"/>
+                      <CreditCard className="absolute left-4 top-3.5 text-gray-400 dark:text-gray-500 w-5 h-5"/>
                       <textarea 
-                          className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-blue-500 min-h-[80px]"
+                          className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-xl py-2 pl-12 pr-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all shadow-sm min-h-[60px] resize-none"
                           placeholder="Special instructions..."
                           value={formData.notes}
                           onChange={(e) => setFormData({...formData, notes: e.target.value})}
@@ -197,7 +199,7 @@ const BookingModal = ({ service, onClose }) => {
                <button 
                 onClick={() => setStep(2)}
                 disabled={!formData.date || !formData.time || !formData.address}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-blue-500/20"
               >
                 Proceed to Payment
               </button>
@@ -205,28 +207,28 @@ const BookingModal = ({ service, onClose }) => {
           )}
 
           {step === 2 && (
-            <div className="text-center py-6">
-               <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500">
+            <div className="text-center py-8">
+               <div className="w-16 h-16 bg-green-50 dark:bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600 dark:text-green-500 shadow-sm border border-green-100 dark:border-green-500/20">
                    <CreditCard size={32} />
                </div>
-               <h4 className="text-xl font-bold text-white mb-2">Payment Summary</h4>
-               <p className="text-gray-400 mb-6">Total Amount: <span className="text-white font-bold text-lg">${service.price}</span></p>
+               <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Payment Summary</h4>
+               <p className="text-gray-600 dark:text-gray-400 mb-8">Total Amount: <span className="text-blue-600 dark:text-blue-400 font-bold text-xl">₹{service.price}</span></p>
                
-               <p className="text-sm text-gray-500 mb-8 bg-gray-900/50 p-4 rounded-lg">
+               <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-8 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
                  You are about to be redirected to the secure payment gateway.
                </p>
 
                <button 
                 onClick={handleBooking}
                 disabled={loading}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center shadow-lg hover:shadow-blue-500/20"
               >
                 {loading ? <Loader className="animate-spin mr-2" /> : "Confirm & Pay"}
               </button>
               
               <button 
                 onClick={() => setStep(1)}
-                className="mt-4 text-gray-400 hover:text-white text-sm"
+                className="mt-6 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-bold text-sm transition-colors"
               >
                 Back to Details
               </button>

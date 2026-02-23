@@ -64,14 +64,14 @@ const getAllServices = async (req, res) => {
     }
 
     if (location) {
-      // Find providers who match City OR District OR ZipCode
+      // Find providers who match City OR Area OR ZipCode
       const providersInLocation = await User.find({
         $and: [
           { role: "provider" },
           {
             $or: [
               { city: { $regex: location, $options: "i" } },
-              { district: { $regex: location, $options: "i" } },
+              { area: { $regex: location, $options: "i" } },
               { zipCode: { $regex: location, $options: "i" } }
             ]
           }

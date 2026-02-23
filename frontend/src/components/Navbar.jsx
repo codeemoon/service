@@ -1,8 +1,9 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Menu, X, User, ChevronDown, MapPin, Search, Sun, Moon } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
+import api from "../api/axios";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -15,20 +16,31 @@ const Navbar = () => {
   const [locationQuery, setLocationQuery] = useState("");
   // "search" | "location" — which mobile input is active
   const [mobileMode, setMobileMode] = useState("search");
-  const locationDebounce = useRef(null);
+  const [locationsList, setLocationsList] = useState([]);
 
-  // Live sync services page on location typing (debounced 400ms)
+  // Fetch allowed locations
   useEffect(() => {
-    if (locationDebounce.current) clearTimeout(locationDebounce.current);
-    if (!locationQuery.trim()) return;
-    locationDebounce.current = setTimeout(() => {
-      const params = new URLSearchParams(location.search);
-      params.set("location", locationQuery);
-      // Remove search if present so we don't double-filter
-      navigate(`/services?${params.toString()}`, { replace: true });
-    }, 400);
-    return () => clearTimeout(locationDebounce.current);
-  }, [locationQuery]);
+    const fetchLocations = async () => {
+      try {
+        const { data } = await api.get("/locations?activeOnly=true");
+        setLocationsList(data);
+      } catch (error) {
+        console.error("Failed to fetch locations", error);
+      }
+    };
+    fetchLocations();
+  }, []);
+
+  const handleLocationChange = (val) => {
+    setLocationQuery(val);
+    const params = new URLSearchParams(location.search);
+    if (val) {
+      params.set("location", val);
+    } else {
+      params.delete("location");
+    }
+    navigate(`/services?${params.toString()}`, { replace: true });
+  };
 
 
   const handleLogout = () => {
@@ -69,6 +81,7 @@ const Navbar = () => {
 
   const isDashboardPage = ["/dashboard", "/provider", "/admin"].includes(location.pathname);
   const isAuthPage = ["/login", "/register", "/provider-register"].includes(location.pathname);
+  const isServicesPage = location.pathname.startsWith("/services");
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-[#0a0a0a] backdrop-blur-md border-b border-gray-200 dark:border-white/10 h-20 flex items-center transition-colors duration-300">
@@ -83,18 +96,22 @@ const Navbar = () => {
             </Link>
 
             {/* Desktop search + location */}
-            {!isAuthPage && (
+            {!isAuthPage && !isServicesPage && (
             <div className="hidden md:flex items-center space-x-3">
                 {/* Location Input */}
                 <div className="relative group">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
-                    <input
-                        type="text"
-                        placeholder="District / City..."
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4 pointer-events-none" />
+                    <select
                         value={locationQuery}
-                        onChange={(e) => setLocationQuery(e.target.value)}
-                        className="bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-300 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-[#151515] w-44 transition-all"
-                    />
+                        onChange={(e) => handleLocationChange(e.target.value)}
+                        className="bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-300 rounded-xl pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-[#151515] w-44 transition-all appearance-none cursor-pointer"
+                    >
+                        <option value="">All Areas</option>
+                        {locationsList.map(loc => (
+                            <option key={loc._id} value={loc.name}>{loc.name}</option>
+                        ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                 </div>
 
                 {/* Search Input */}
@@ -121,15 +138,6 @@ const Navbar = () => {
                    Become a Service Provider
                 </Link>
             )}
-
-            {/* Theme Toggle */}
-            <button
-                onClick={toggleTheme}
-                className="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-                title="Toggle Theme"
-            >
-                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
             
             {!isAuthPage && (user ? (
               <div className="flex items-center space-x-4">
@@ -200,7 +208,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Animated Search / Location Toggle */}
-          {!isAuthPage && (
+          {!isAuthPage && !isServicesPage && (
           <>
           <div className="md:hidden flex-1 mx-3 relative overflow-hidden" style={{ height: '36px' }}>
             {/* Search Input (slides in from left when mobileMode === 'search') */}
@@ -228,19 +236,23 @@ const Navbar = () => {
                 mobileMode === 'location' ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
               }`}
             >
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 w-4 h-4 z-10" />
-              <input
-                type="text"
-                placeholder="District / City..."
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 w-4 h-4 z-10 pointer-events-none" />
+              <select
                 value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-                className="w-full bg-gray-100 dark:bg-[#111] border border-blue-500/40 text-gray-900 dark:text-gray-300 rounded-xl pl-9 pr-9 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all"
-              />
+                onChange={(e) => handleLocationChange(e.target.value)}
+                className="w-full bg-gray-100 dark:bg-[#111] border border-blue-500/40 text-gray-900 dark:text-gray-300 rounded-xl pl-9 pr-9 py-2 text-sm focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
+              >
+                <option value="">All Areas</option>
+                {locationsList.map(loc => (
+                    <option key={loc._id} value={loc.name}>{loc.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
               {locationQuery && (
                 <button
                   type="button"
-                  onClick={() => { setLocationQuery(""); navigate("/services", { replace: true }); }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-400 transition-colors"
+                  onClick={() => handleLocationChange("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-400 transition-colors bg-gray-100 dark:bg-[#111] px-1 rounded-full"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -273,12 +285,6 @@ const Navbar = () => {
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-1">
             <button
-                onClick={toggleTheme}
-                className="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-            >
-                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-            <button
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white focus:outline-none"
             >
@@ -293,7 +299,7 @@ const Navbar = () => {
         <div className="md:hidden absolute top-20 left-0 w-full bg-white dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 z-50">
           <div className="px-4 py-6 space-y-4">
             {/* Mobile Location & Search */}
-            {!isAuthPage && (
+            {!isAuthPage && !isServicesPage && (
             <div className="space-y-4 mb-6">
 
                 <form onSubmit={(e) => { handleSearch(e); setIsOpen(false); }} className="relative">

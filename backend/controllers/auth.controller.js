@@ -7,7 +7,7 @@ const sendEmail = require("../utils/email");
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, phone, city, district, zipCode, plan } = req.body;
+    const { name, email, password, role, phone, city, area, zipCode, plan } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
@@ -28,7 +28,7 @@ const register = async (req, res) => {
       plan: role === "provider" ? (plan || "free") : "free",
       phone,
       city,
-      district,
+      area,
       zipCode,
       isVerified: true, // Verification is now handled before registration
     });
@@ -91,7 +91,7 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role,
         city: user.city,
-        district: user.district,
+        area: user.area,
         zipCode: user.zipCode,
       },
     });
@@ -162,7 +162,7 @@ const googleLogin = async (req, res) => {
             email: user.email,
             role: user.role,
             city: user.city,
-            district: user.district,
+            area: user.area,
             zipCode: user.zipCode,
         },
     });

@@ -3,14 +3,14 @@ import { DollarSign, Calendar, Users, TrendingUp, CheckCircle, Star, Briefcase, 
 
 const ProviderLanding = () => {
   return (
-    <div className="text-white">
+    <div className="text-gray-900 dark:text-white bg-gray-50 dark:bg-[#0a0a0a]">
       {/* Hero Section */}
       <section className="relative pt-20 pb-32 overflow-hidden">
         <div className="container mx-auto px-4 text-center relative z-10">
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent">
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 bg-gradient-to-b from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
             Become a Partner
           </h1>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
             Join thousands of professionals earning on their own schedule. 
             Grow your business, reach more customers, and maximize your income.
           </p>
@@ -18,13 +18,13 @@ const ProviderLanding = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <Link
               to="/provider-register"
-              className="px-8 py-4 bg-[#ff4d4d] hover:bg-[#ff3333] text-white rounded-full font-bold text-lg transition-all shadow-lg hover:shadow-red-500/30 flex items-center"
+              className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold text-lg transition-all shadow-lg hover:shadow-blue-500/30 flex items-center"
             >
               Start Earning Today
             </Link>
             <a
               href="#how-it-works"
-              className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-full font-bold text-lg transition-all border border-gray-700"
+              className="px-8 py-4 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white rounded-full font-bold text-lg transition-all border border-gray-200 dark:border-gray-700 shadow-sm"
             >
               Learn More
             </a>
@@ -32,39 +32,39 @@ const ProviderLanding = () => {
         </div>
         
         {/* Background Gradients */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-red-500/10 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-blue-500/10 dark:bg-blue-500/10 blur-[120px] rounded-full pointer-events-none -z-10"></div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-[#0a0a0a] border-y border-gray-900">
+      <section className="py-16 bg-white dark:bg-[#0a0a0a] border-y border-gray-200 dark:border-gray-900">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-4xl font-bold text-[#ff4d4d] mb-2">10,000+</div>
-              <div className="text-gray-400">Active Partners</div>
+              <div className="text-4xl font-bold text-blue-600 dark:text-blue-500 mb-2">10,000+</div>
+              <div className="text-gray-600 dark:text-gray-400">Active Partners</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-[#ff4d4d] mb-2">$2,500</div>
-              <div className="text-gray-400">Avg. Monthly Earnings</div>
+              <div className="text-4xl font-bold text-blue-600 dark:text-blue-500 mb-2">$2,500</div>
+              <div className="text-gray-600 dark:text-gray-400">Avg. Monthly Earnings</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-[#ff4d4d] mb-2">50,000+</div>
-              <div className="text-gray-400">Bookings Completed</div>
+              <div className="text-4xl font-bold text-blue-600 dark:text-blue-500 mb-2">50,000+</div>
+              <div className="text-gray-600 dark:text-gray-400">Bookings Completed</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-[#ff4d4d] mb-2">4.8/5</div>
-              <div className="text-gray-400">Partner Satisfaction</div>
+              <div className="text-4xl font-bold text-blue-600 dark:text-blue-500 mb-2">4.8/5</div>
+              <div className="text-gray-600 dark:text-gray-400">Partner Satisfaction</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Benefits Section */}
-      <section className="py-24 bg-[#050505]">
+      <section className="py-24 bg-gray-50 dark:bg-[#050505]">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Why Partner With Us?</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               We provide everything you need to succeed and grow your business
             </p>
           </div>
@@ -111,11 +111,11 @@ const ProviderLanding = () => {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-24 bg-[#0a0a0a]">
+      <section id="how-it-works" className="py-24 bg-white dark:bg-[#0a0a0a]">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">How It Works</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Get started in 3 simple steps
             </p>
           </div>
@@ -141,11 +141,11 @@ const ProviderLanding = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-24 bg-[#050505]">
+      <section className="py-24 bg-gray-50 dark:bg-[#050505]">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">What Our Partners Say</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Real stories from real professionals
             </p>
           </div>
@@ -174,15 +174,15 @@ const ProviderLanding = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-b from-[#0a0a0a] to-[#050505] border-t border-gray-900">
+      <section className="py-24 bg-gradient-to-b from-white to-gray-50 dark:from-[#0a0a0a] dark:to-[#050505] border-t border-gray-200 dark:border-gray-900">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Start Earning?</h2>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10">
+          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-10">
             Join our community of successful professionals today. No commitments, no monthly fees.
           </p>
           <Link
             to="/provider-register"
-            className="inline-block px-10 py-5 bg-[#ff4d4d] hover:bg-[#ff3333] text-white rounded-full font-bold text-xl transition-all shadow-lg hover:shadow-red-500/30"
+            className="inline-block px-10 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold text-xl transition-all shadow-lg hover:shadow-blue-500/30"
           >
             Become a Partner Now
           </Link>
@@ -203,36 +203,36 @@ const BenefitCard = ({ icon, title, description, color }) => {
   };
 
   return (
-    <div className="bg-[#111] border border-gray-800 rounded-2xl p-8 hover:border-gray-700 transition-all">
+    <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-3xl p-8 hover:border-blue-500/50 dark:hover:border-blue-500/50 hover:shadow-lg transition-all shadow-sm">
       <div className={`w-16 h-16 ${colorClasses[color]} rounded-full flex items-center justify-center mb-6`}>
         {icon}
       </div>
-      <h3 className="text-xl font-bold mb-3">{title}</h3>
-      <p className="text-gray-400 leading-relaxed">{description}</p>
+      <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">{title}</h3>
+      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{description}</p>
     </div>
   );
 };
 
 const StepCard = ({ number, title, description }) => (
   <div className="text-center">
-    <div className="w-16 h-16 bg-[#ff4d4d] rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">
+    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-black">
       {number}
     </div>
-    <h3 className="text-2xl font-bold mb-4">{title}</h3>
-    <p className="text-gray-400 leading-relaxed">{description}</p>
+    <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{title}</h3>
+    <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{description}</p>
   </div>
 );
 
 const TestimonialCard = ({ name, role, rating, text }) => (
-  <div className="bg-[#111] border border-gray-800 rounded-2xl p-8">
+  <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-3xl p-8 shadow-sm">
     <div className="flex items-center mb-4">
       {[...Array(rating)].map((_, i) => (
         <Star key={i} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
       ))}
     </div>
-    <p className="text-gray-300 mb-6 leading-relaxed">"{text}"</p>
+    <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">"{text}"</p>
     <div>
-      <div className="font-bold text-white">{name}</div>
+      <div className="font-bold text-gray-900 dark:text-white">{name}</div>
       <div className="text-sm text-gray-500">{role}</div>
     </div>
   </div>

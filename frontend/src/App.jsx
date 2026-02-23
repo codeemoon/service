@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import ProviderLanding from "./pages/ProviderLanding";
 import RoleLandingPage from "./components/RoleLandingPage";
 import Services from "./pages/Services";
+import Categories from "./pages/Categories";
 import ServiceDetails from "./pages/ServiceDetails";
 import CustomerDashboard from "./pages/dashboard/CustomerDashboard";
 import ProviderDashboard from "./pages/dashboard/ProviderDashboard";
@@ -25,6 +26,7 @@ function App() {
         <Route index element={<RoleLandingPage />} />
         <Route path="become-partner" element={<ProviderLanding />} />
         <Route path="services" element={<Services />} />
+        <Route path="categories" element={<Categories />} />
         <Route path="services/:id" element={<ServiceDetails />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />

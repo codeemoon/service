@@ -8,6 +8,7 @@ const reviewRoutes = require("./routes/review.routes");
 const paymentRoutes = require("./routes/payment.routes");
 const adminRoutes = require("./routes/admin.routes");
 const userRoutes = require("./routes/user.routes");
+const locationRoutes = require("./routes/location.routes");
 
 const app = express();
 
@@ -52,5 +53,6 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/locations", locationRoutes);
 
 module.exports = app
