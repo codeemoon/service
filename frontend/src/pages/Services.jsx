@@ -69,7 +69,7 @@ const Services = () => {
   }, [services, sortKey, priceRange]);
 
   return (
-    <div className="min-h-screen pt-[76px] pb-12 bg-gray-50 dark:bg-[#0a0a0a]">
+    <div className="min-h-screen pt-28 pb-12 bg-gray-50 dark:bg-[#0a0a0a]">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Header & Search */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-3 gap-4">
