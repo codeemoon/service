@@ -36,6 +36,7 @@ const Chatbot = () => {
       // Send chat context to the backend
       const response = await api.post('/chat', {
         message: userText,
+        currentUrl: window.location.pathname,
         // Optional: send previous history for context, mapped to Gemini's expected format if needed
         history: messages.slice(1).map(msg => ({
             role: msg.role === 'user' ? 'user' : 'model',

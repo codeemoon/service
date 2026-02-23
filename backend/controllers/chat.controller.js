@@ -4,7 +4,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const handleChat = async (req, res) => {
     try {
-        const { message, history } = req.body;
+        const { message, history, currentUrl } = req.body;
 
         if (!message) {
             return res.status(400).json({ success: false, message: "Please provide a message." });
@@ -12,6 +12,10 @@ const handleChat = async (req, res) => {
 
         // System instructions to guide the bot
         const systemInstruction = `You are a friendly, helpful customer service assistant for 'HelpBro', an online platform connecting customers with top-tier local service providers (Cleaners, Electricians, Plumbers, Mechanics, etc.). 
+
+IMPORTANT CONTEXT:
+The user is currently browsing the following page on the website: ${currentUrl || 'Unknown'}
+If they ask what page they are on, or need help with their current screen, use this URL context.
 
 STRICT RULES:
 1. ONLY provide information about Customer and Service Provider features.
