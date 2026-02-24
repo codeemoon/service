@@ -10,6 +10,7 @@ const adminRoutes = require("./routes/admin.routes");
 const userRoutes = require("./routes/user.routes");
 const locationRoutes = require("./routes/location.routes");
 const chatRoutes = require("./routes/chat.routes");
+const providerRoutes = require("./routes/provider.routes");
 
 const app = express();
 
@@ -53,5 +54,6 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/providers", providerRoutes);
 
 module.exports = app

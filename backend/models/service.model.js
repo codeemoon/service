@@ -32,7 +32,7 @@ const serviceSchema = new mongoose.Schema({
   },
   provider: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    ref: "ServiceProvider",
     required: true,
   },
   image: {

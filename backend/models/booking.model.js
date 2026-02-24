@@ -8,7 +8,7 @@ const bookingSchema = new mongoose.Schema({
   },
   provider: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    ref: "ServiceProvider",
     required: true,
   },
   service: {

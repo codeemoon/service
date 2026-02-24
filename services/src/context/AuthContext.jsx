@@ -16,8 +16,8 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
     if (token) {
       try {
-        const { data } = await api.get("/auth/me");
-        setUser(data);
+        const { data } = await api.get("/providers/me");
+        setUser({ ...data, role: "provider" });
       } catch (error) {
         console.error("Auth check failed", error);
         localStorage.removeItem("token");
@@ -29,10 +29,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const { data } = await api.post("/auth/login", { email, password });
+      const { data } = await api.post("/providers/login", { email, password });
       localStorage.setItem("token", data.token);
       setUser(data.user);
-      toast.success("Login successful!");
       return data.user;
     } catch (error) {
       const msg = error.response?.data?.message || "Login failed";
@@ -41,23 +40,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const googleLogin = async (token) => {
-    try {
-        const { data } = await api.post("/auth/google", { token });
-        localStorage.setItem("token", data.token);
-        setUser(data.user);
-        toast.success("Google Login successful!");
-        return data.user;
-    } catch (error) {
-        console.error("Google login error", error);
-        toast.error("Google Login failed");
-        return null;
-    }
-  };
-
   const register = async (userData) => {
     try {
-      await api.post("/auth/register", userData);
+      await api.post("/providers/register", userData);
       toast.success("Registration successful! Please login.");
       return true;
     } catch (error) {
@@ -73,8 +58,13 @@ export const AuthProvider = ({ children }) => {
     toast.success("Logged out");
   };
 
+  const silentLogout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, googleLogin, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, silentLogout, loading }}>
       {children}
     </AuthContext.Provider>
   );

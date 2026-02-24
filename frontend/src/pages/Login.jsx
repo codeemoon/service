@@ -27,7 +27,7 @@ const Login = () => {
              toast.error("Access denied. Please use the provider portal to log in.");
              return;
          }
-         navigate("/dashboard");
+         navigate("/");
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Login failed");
@@ -98,7 +98,7 @@ const Login = () => {
                             toast.error("Access denied. Please use the provider portal to log in.");
                             return;
                         }
-                        navigate("/dashboard");
+                        navigate("/");
                     }
                 }}
                 onError={() => {

@@ -79,10 +79,13 @@ const ProviderRegister = () => {
     city: "",
     area: "",
     zipCode: "",
+    businessName: "",
+    panNumber: "",
+    gstNumber: "",
     plan: "free",
   });
 
-  const { register } = useAuth();
+  const { register, login } = useAuth();
   const navigate = useNavigate();
   const [cashfree, setCashfree] = useState(null);
 
@@ -188,7 +191,17 @@ const ProviderRegister = () => {
     setIsLoading(true);
     try {
       const success = await register(formData);
-      if (success) navigate("/provider");
+      if (success) {
+        // Auto-login the newly registered provider
+        const loggedInUser = await login(formData.email, formData.password);
+        if (loggedInUser) {
+          toast.success("Welcome aboard! Redirecting to your dashboard...");
+          navigate("/dashboard");
+        } else {
+          // Fallback: go to login page if auto-login fails
+          navigate("/login");
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -204,7 +217,7 @@ const ProviderRegister = () => {
 
     setIsLoading(true);
     try {
-      const { data } = await api.post("/auth/check-email", { email: formData.email });
+      const { data } = await api.post("/providers/check-email", { email: formData.email });
       if (!data.exists) {
         setStep(2);
       }
@@ -397,6 +410,38 @@ const ProviderRegister = () => {
                         placeholder="Andheri" value={formData.area}
                         onChange={(e) => setFormData({ ...formData, area: e.target.value })} />
                     )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Business Details */}
+              <div className="pt-2 pb-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+                  <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Business Info (Optional)</span>
+                  <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Business Name</label>
+                    <input type="text"
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-blue-500/50 text-gray-900 dark:text-white transition-all shadow-inner text-sm"
+                      placeholder="e.g. Rahul Services" value={formData.businessName}
+                      onChange={(e) => setFormData({ ...formData, businessName: e.target.value })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">PAN Number</label>
+                    <input type="text" maxLength={10}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-blue-500/50 text-gray-900 dark:text-white transition-all shadow-inner text-sm uppercase"
+                      placeholder="ABCDE1234F" value={formData.panNumber}
+                      onChange={(e) => setFormData({ ...formData, panNumber: e.target.value.toUpperCase() })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">GST Number</label>
+                    <input type="text" maxLength={15}
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-blue-500/50 text-gray-900 dark:text-white transition-all shadow-inner text-sm uppercase"
+                      placeholder="22AAAAA0000A1Z5" value={formData.gstNumber}
+                      onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value.toUpperCase() })} />
                   </div>
                 </div>
               </div>
