@@ -4,6 +4,7 @@ import api from "../api/axios";
 import { Star, MapPin, Clock, ArrowLeft, ArrowRight, CheckCircle, Calendar } from "lucide-react";
 import BookingModal from "../components/BookingModal";
 import ServiceCard from "../components/ServiceCard";
+import { staticServices } from "../utils/staticData";
 
 const ServiceDetails = () => {
   const { id } = useParams();
@@ -20,6 +21,16 @@ const ServiceDetails = () => {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
+        if (id.startsWith("srv_static_")) {
+          const staticService = staticServices.find(s => s._id === id);
+          if (staticService) {
+            setService({ ...staticService, name: staticService.title, duration: staticService.duration || 60 });
+            setProviderServices([]);
+            setReviews([]);
+          }
+          return;
+        }
+
         const serviceRes = await api.get(`/services/${id}`);
         setService(serviceRes.data);
 
@@ -73,7 +84,7 @@ const ServiceDetails = () => {
                     {/* Content Section */}
                     <div className="p-5 sm:p-6">
                     <div className="flex justify-between items-start mb-2">
-                        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{service.name}</h1>
+                        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{service.name || service.title}</h1>
                     </div>
 
                     <div className="mb-5">
@@ -129,12 +140,18 @@ const ServiceDetails = () => {
                         </div>
                     </div>
 
-                    <button 
-                        onClick={() => setShowBookingModal(true)}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 sm:py-4 rounded-xl transition-all shadow-lg hover:shadow-blue-500/20"
-                    >
-                        Book Now
-                    </button>
+                    {id.startsWith("srv_static_") ? (
+                        <div className="w-full bg-gray-200 dark:bg-gray-800 text-gray-500 font-bold py-3 sm:py-4 rounded-xl text-center cursor-not-allowed">
+                            Demo Service - Cannot Book
+                        </div>
+                    ) : (
+                        <button 
+                            onClick={() => setShowBookingModal(true)}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 sm:py-4 rounded-xl transition-all shadow-lg hover:shadow-blue-500/20"
+                        >
+                            Book Now
+                        </button>
+                    )}
                 </div>
 
                 {/* Reviews Section (Right Column) */}

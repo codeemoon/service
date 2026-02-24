@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import ServiceCard from "../components/ServiceCard";
 import { Search, Filter, ChevronDown } from "lucide-react";
+import { staticServices } from "../utils/staticData";
 
 const SORT_OPTIONS = [
   { key: "default",    label: "Default" },
@@ -48,7 +49,17 @@ const Services = () => {
         if (locationParam) params.append("location", locationParam);
 
         const { data } = await api.get(`/services?${params.toString()}`);
-        setServices(data);
+        
+        let filteredStatic = staticServices;
+        if (categoryId) {
+          filteredStatic = filteredStatic.filter(s => s.category?._id === categoryId);
+        }
+        if (searchParam) {
+          const lowerSearch = searchParam.toLowerCase();
+          filteredStatic = filteredStatic.filter(s => s.title.toLowerCase().includes(lowerSearch) || s.description.toLowerCase().includes(lowerSearch));
+        }
+
+        setServices([...filteredStatic, ...data]);
       } catch (error) {
         console.error("Failed to fetch services", error);
       } finally {

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
 import ServiceCard from "../components/ServiceCard";
+import { staticCategories, staticServices } from "../utils/staticData";
 import { MapPin, Globe, ArrowRight, Star, Shield, Clock } from "lucide-react";
 
 const Home = () => {
@@ -36,8 +37,8 @@ const Home = () => {
           api.get("/categories"),
           api.get(`/services`),
         ]);
-        setCategories(categoriesRes.data);
-        setServices(servicesRes.data);
+        setCategories([...staticCategories, ...categoriesRes.data]);
+        setServices([...staticServices, ...servicesRes.data]);
       } catch (error) {
         console.error("Failed to fetch home data", error);
       } finally {
@@ -83,7 +84,7 @@ const Home = () => {
       </section>
 
       {/* Mobile Banner Carousel (Auto-scrolling, Edge-to-Edge) */}
-      <section className="block md:hidden pt-20 relative overflow-hidden h-[180px] sm:h-[220px]">
+      <section className="block md:hidden pt-20 relative overflow-hidden h-[216px] sm:h-[264px]">
         <div 
           className="flex transition-transform duration-700 ease-in-out h-full"
           style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}
@@ -114,8 +115,8 @@ const Home = () => {
       {/* Categories Section */}
       <section className="pt-6 pb-4 overflow-hidden bg-white dark:bg-[#000000]">
         <div className="container mx-auto">
-          <div className="flex justify-between items-center mb-6 px-4">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Categories</h2>
+          <div className="flex justify-between items-center mb-3 px-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Categories</h2>
             <Link to="/categories" className="text-gray-500 hover:text-gray-900 dark:hover:text-white text-sm flex items-center gap-1 transition-colors font-sans uppercase tracking-widest text-[11px] font-bold">
               View all <ArrowRight className="w-4 h-4" />
             </Link>
@@ -164,12 +165,12 @@ const Home = () => {
       </section>
 
       {/* Services Section */}
-      <section className="pt-2 pb-16 px-4 bg-gray-50 dark:bg-[#0a0a0a] border-t border-gray-200 dark:border-gray-800">
+      <section className="pt-2 pb-6 px-4 bg-gray-50 dark:bg-[#0a0a0a] border-t border-gray-200 dark:border-gray-800">
         <div className="container mx-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Services</h2>
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Services</h2>
             <Link to="/services" className="text-gray-500 hover:text-gray-900 dark:hover:text-white text-sm flex items-center gap-1 transition-colors font-sans uppercase tracking-widest text-[11px] font-bold">
-              See all <ArrowRight className="w-4 h-4" />
+              view all <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
 import { ArrowLeft } from "lucide-react";
+import { staticCategories } from "../utils/staticData";
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
@@ -11,7 +12,7 @@ const Categories = () => {
     const fetchCategories = async () => {
       try {
         const { data } = await api.get("/categories");
-        setCategories(data);
+        setCategories([...staticCategories, ...data]);
       } catch (error) {
         console.error("Failed to fetch categories", error);
       } finally {
