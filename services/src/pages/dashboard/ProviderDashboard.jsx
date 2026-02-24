@@ -1,13 +1,21 @@
 import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../api/axios";
-import { Briefcase, Calendar, Wallet, Plus, Edit2, Trash2, Check, Loader, Image as ImageIcon, X, Clock } from "lucide-react";
+import { Briefcase, Calendar, Wallet, Plus, Edit2, Trash2, Check, Loader, Image as ImageIcon, X, Clock, User, Mail, Phone, MapPin } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { convertToWebp } from "../../utils/convertToWebp";
 import { useAuth } from "../../context/AuthContext";
 
 const ProviderDashboard = () => {
-  const { logout } = useAuth();
-  const [activeTab, setActiveTab] = useState("bookings");
+  const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("tab") || "bookings";
+  });
+  
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -38,6 +46,20 @@ const ProviderDashboard = () => {
     fetchCategories();
     fetchWallet();
   }, []);
+
+  // Sync tab state with URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+    if (tab && tab !== activeTab) {
+        setActiveTab(tab);
+    }
+  }, [location.search]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    navigate(`/dashboard?tab=${tab}`);
+  };
 
   useEffect(() => {
     if (activeTab === "services") {
@@ -178,20 +200,51 @@ const ProviderDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12 bg-gray-50 dark:bg-[#0a0a0a]">
-      <div className="container mx-auto px-4 max-w-6xl">
-        <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Provider Dashboard</h1>
-            <button onClick={handleDeleteAccount} className="text-red-500 hover:text-red-400 font-bold text-sm bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/20 hover:bg-red-500/20 transition">
-                Delete Account
-            </button>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pt-20 flex">
+      {/* Sidebar Desktop */}
+      <aside className="hidden md:flex flex-col w-64 bg-white dark:bg-[#111] border-r border-gray-200 dark:border-gray-800 h-[calc(100vh-5rem)] sticky top-20">
+        <div className="p-6 pb-4">
+            <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Dashboard</h2>
+        </div>
+        
+        <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
+          <SidebarButton 
+            active={activeTab === "bookings"} 
+            onClick={() => handleTabChange("bookings")} 
+            icon={<Calendar className="w-5 h-5" />} 
+            label="Booking Requests" 
+          />
+          <SidebarButton 
+            active={activeTab === "services"} 
+            onClick={() => handleTabChange("services")} 
+            icon={<Briefcase className="w-5 h-5" />} 
+            label="My Services" 
+          />
+          <SidebarButton 
+            active={activeTab === "profile"} 
+            onClick={() => handleTabChange("profile")} 
+            icon={<User className="w-5 h-5" />} 
+            label="Profile Settings" 
+          />
+        </nav>
+
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+           <button onClick={handleDeleteAccount} className="w-full flex items-center gap-2 justify-center text-red-500 hover:text-white hover:bg-red-500 font-bold text-sm bg-red-50 dark:bg-red-500/10 px-4 py-3 rounded-xl transition-colors">
+              <Trash2 className="w-4 h-4"/> Delete Account
+           </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-5rem)]">
+        
+        {/* Mobile Sidebar/Tabs equivalent */}
+        <div className="md:hidden flex space-x-2 mb-6 border-b border-gray-200 dark:border-gray-800 overflow-x-auto no-scrollbar pb-2">
+          <TabButton active={activeTab === "bookings"} onClick={() => handleTabChange("bookings")} icon={<Calendar className="w-4 h-4" />} label="Bookings" />
+          <TabButton active={activeTab === "services"} onClick={() => handleTabChange("services")} icon={<Briefcase className="w-4 h-4" />} label="Services" />
+          <TabButton active={activeTab === "profile"} onClick={() => handleTabChange("profile")} icon={<User className="w-4 h-4" />} label="Profile" />
         </div>
 
-        {/* Tabs */}
-        <div className="flex space-x-2 mb-8 border-b border-gray-200 dark:border-gray-800">
-          <TabButton active={activeTab === "bookings"} onClick={() => setActiveTab("bookings")} icon={<Calendar className="w-4 h-4" />} label="Booking Requests" />
-          <TabButton active={activeTab === "services"} onClick={() => setActiveTab("services")} icon={<Briefcase className="w-4 h-4" />} label="My Services" />
-        </div>
 
         {/* Bookings Tab */}
         {activeTab === "bookings" && (
@@ -279,28 +332,34 @@ const ProviderDashboard = () => {
             ) : myServices.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {myServices.map(service => (
-                  <div key={service._id} className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm hover:border-blue-500/30 transition-all hover:shadow-md">
-                    <img src={service.image || "https://via.placeholder.com/300"} alt={service.name} className="w-full h-48 object-cover" />
-                    <div className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{service.name}</h3>
-                        <div className="flex space-x-2">
-                          <button onClick={() => handleEditService(service)} className="p-2 text-blue-500 hover:bg-blue-500/10 rounded-lg transition">
-                            <Edit2 className="w-4 h-4" />
+                  <div key={service._id} className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl md:rounded-2xl overflow-hidden shadow-sm hover:border-blue-500/30 transition-all hover:shadow-md flex flex-col">
+                    <img src={service.image || "https://via.placeholder.com/300"} alt={service.name} className="w-full h-36 md:h-48 object-cover" />
+                    <div className="p-3 md:p-4 flex flex-col flex-grow">
+                      <div className="flex justify-between items-start mb-1.5 md:mb-2">
+                        <h3 className="text-base md:text-xl font-bold text-gray-900 dark:text-white leading-tight pr-2">{service.name}</h3>
+                        <div className="flex space-x-1 md:space-x-2 shrink-0 -mt-1 md:mt-0">
+                          <button onClick={() => handleEditService(service)} className="p-1.5 md:p-2 text-blue-500 hover:bg-blue-500/10 rounded-lg transition">
+                            <Edit2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
                           </button>
-                          <button onClick={() => handleDeleteService(service._id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition">
-                            <Trash2 className="w-4 h-4" />
+                          <button onClick={() => handleDeleteService(service._id)} className="p-1.5 md:p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition">
+                            <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
                           </button>
                         </div>
                       </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm mt-1 line-clamp-2">{service.description}</p>
-                      <div className="flex justify-between items-center mt-4">
-                        <span className="text-blue-500 font-bold">${service.price}</span>
-                        <span className="text-gray-500 text-xs">{service.duration} mins</span>
+                      <p className="text-gray-600 dark:text-gray-400 text-xs md:text-sm line-clamp-2 md:line-clamp-none mb-3 flex-grow">{service.description}</p>
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-blue-600 dark:text-blue-400 font-black text-base md:text-lg">₹{service.price}</span>
+                        <span className="text-gray-500 text-[10px] md:text-xs font-medium bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded-md border border-gray-100 dark:border-gray-800">{service.duration} mins</span>
                       </div>
-                      <div className="mt-2 text-xs text-gray-500 dark:text-gray-600">
-                        Category: {service.category?.name || "Unknown"} <br/>
-                        Hours: {service.startTime} - {service.endTime}
+                      <div className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 space-y-1 md:space-y-1.5 border-t border-gray-100 dark:border-gray-800/60 pt-2.5 md:pt-3">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-gray-700 dark:text-gray-300">Category</span>
+                          <span className="truncate text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800/30 px-1.5 py-0.5 rounded max-w-[120px] md:max-w-[150px]">{service.category?.name || "Unknown"}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-gray-700 dark:text-gray-300">Hours</span>
+                          <span className="text-gray-900 dark:text-white font-medium">{service.startTime} - {service.endTime}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -310,6 +369,49 @@ const ProviderDashboard = () => {
               <p className="text-gray-500">You haven't added any services yet.</p>
             )}
           </div>
+        )}
+
+        {/* Profile Tab */}
+        {activeTab === "profile" && (
+            <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-3xl p-8 shadow-sm max-w-3xl mx-auto">
+                <div className="flex flex-col items-center mb-8 border-b border-gray-100 dark:border-gray-800 pb-8">
+                    <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-4xl font-bold text-white uppercase shadow-lg shadow-blue-500/20 mb-4 border-4 border-white dark:border-[#0a0a0a]">
+                        {user?.name?.[0]}
+                    </div>
+                    <h2 className="text-2xl font-black text-gray-900 dark:text-white capitalize tracking-tight">{user?.name}</h2>
+                    <p className="text-blue-500 font-bold uppercase tracking-widest text-xs mt-2 bg-blue-500/10 px-3 py-1 rounded-full">{user?.role}</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-2xl p-5 border border-gray-100 dark:border-gray-800/60">
+                         <div className="flex items-center gap-3 mb-2 text-gray-500 dark:text-gray-400">
+                            <Mail className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-wider">Email Address</span>
+                         </div>
+                         <p className="text-gray-900 dark:text-white font-medium pl-7">{user?.email}</p>
+                    </div>
+
+                    <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-2xl p-5 border border-gray-100 dark:border-gray-800/60">
+                         <div className="flex items-center gap-3 mb-2 text-gray-500 dark:text-gray-400">
+                            <Phone className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-wider">Phone Number</span>
+                         </div>
+                         <p className="text-gray-900 dark:text-white font-medium pl-7">{user?.phone || 'Not provided'}</p>
+                    </div>
+
+                    {user?.city && (
+                    <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-2xl p-5 border border-gray-100 dark:border-gray-800/60 md:col-span-2">
+                         <div className="flex items-center gap-3 mb-2 text-gray-500 dark:text-gray-400">
+                            <MapPin className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-wider">Location / Operating Area</span>
+                         </div>
+                         <p className="text-gray-900 dark:text-white font-medium pl-7">
+                             {user?.area ? `${user.area}, ` : ''}{user?.city}{user?.zipCode ? ` - ${user.zipCode}` : ''}
+                         </p>
+                    </div>
+                    )}
+                </div>
+            </div>
         )}
 
         {/* Service Modal */}
@@ -433,13 +535,27 @@ const ProviderDashboard = () => {
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };
 
+const SidebarButton = ({ active, onClick, icon, label }) => (
+  <button 
+    onClick={onClick} 
+    className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl font-bold transition-all duration-200 ${
+      active 
+        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" 
+        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white"
+    }`}
+  >
+    {icon}
+    <span>{label}</span>
+  </button>
+);
+
 const TabButton = ({ active, onClick, icon, label }) => (
-  <button onClick={onClick} className={`flex items-center space-x-2 px-4 py-3 font-medium transition-colors border-b-2 ${active ? "text-blue-600 border-blue-600 dark:text-blue-500 dark:border-blue-500" : "text-gray-500 border-transparent hover:text-gray-900 dark:hover:text-gray-300"}`}>
+  <button onClick={onClick} className={`flex items-center space-x-2 px-4 py-2 text-sm font-bold transition-colors whitespace-nowrap rounded-full ${active ? "bg-blue-600 text-white" : "bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300"}`}>
     {icon}
     <span>{label}</span>
   </button>

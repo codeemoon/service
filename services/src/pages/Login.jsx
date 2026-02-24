@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { GoogleLogin } from "@react-oauth/google";
 import { toast } from "react-hot-toast";
 import { Loader, Mail, Lock } from "lucide-react";
 
@@ -10,7 +9,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, googleLogin, silentLogout } = useAuth();
+  const { login, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -22,9 +21,9 @@ const Login = () => {
     try {
       const user = await login(email, password);
       if (user) {
-         if (user.role !== "customer") {
-             silentLogout();
-             toast.error("Access denied. Please use the provider portal to log in.");
+         if (user.role !== "provider") {
+             logout();
+             toast.error("Access denied. Only service providers can log in here.");
              return;
          }
          navigate("/dashboard");
@@ -77,44 +76,10 @@ const Login = () => {
           </button>
         </form>
         
-        {/* Divider */}
-        <div className="relative flex justify-center py-6 items-center">
-            <div className="absolute inset-0 flex items-center px-2">
-               <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
-            </div>
-            <span className="relative bg-white dark:bg-[#0f0f0f] px-4 text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
-               Or connect with
-            </span>
-        </div>
-
-        {/* Google Auth */}
-        <div className="flex justify-center transition-transform hover:scale-105 active:scale-95 duration-200">
-            <GoogleLogin
-                onSuccess={async (credentialResponse) => {
-                    const user = await googleLogin(credentialResponse.credential);
-                    if (user) {
-                        if (user.role !== "customer") {
-                            silentLogout();
-                            toast.error("Access denied. Please use the provider portal to log in.");
-                            return;
-                        }
-                        navigate("/dashboard");
-                    }
-                }}
-                onError={() => {
-                    console.log('Login Failed');
-                    toast.error("Google Login Failed");
-                }}
-                theme="filled_black"
-                shape="pill"
-                width="280px"
-            />
-        </div>
-
         {/* Registration Links */}
         <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800/50 text-center flex items-center justify-center gap-2">
            <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">New to HelpBro?</span>
-           <Link to="/register" className="text-gray-900 dark:text-white text-sm font-bold border-b border-gray-900 dark:border-white hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-600 dark:hover:border-gray-300 transition-colors pb-0.5">
+           <Link to="/provider-register" className="text-gray-900 dark:text-white text-sm font-bold border-b border-gray-900 dark:border-white hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-600 dark:hover:border-gray-300 transition-colors pb-0.5">
               Create an account
            </Link>
         </div>

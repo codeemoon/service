@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }) => {
       const { data } = await api.post("/auth/login", { email, password });
       localStorage.setItem("token", data.token);
       setUser(data.user);
+      toast.success("Login successful!");
       return data.user;
     } catch (error) {
       const msg = error.response?.data?.message || "Login failed";
@@ -72,14 +73,8 @@ export const AuthProvider = ({ children }) => {
     toast.success("Logged out");
   };
 
-  // Silent version — clears session without any toast (used for role-rejection flows)
-  const silentLogout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
-  };
-
   return (
-    <AuthContext.Provider value={{ user, login, googleLogin, register, logout, silentLogout, loading }}>
+    <AuthContext.Provider value={{ user, login, googleLogin, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

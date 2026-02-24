@@ -82,6 +82,9 @@ const Navbar = () => {
   const isDashboardPage = ["/dashboard", "/provider", "/admin"].includes(location.pathname);
   const isAuthPage = ["/login", "/register", "/provider-register"].includes(location.pathname);
   const isServicesPage = location.pathname.startsWith("/services");
+  const isProviderLanding = location.pathname === "/become-partner";
+  const isLandingPage = location.pathname === "/";
+  const hideSearchLocation = isAuthPage || isServicesPage || isProviderLanding || isLandingPage;
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-[#0a0a0a] backdrop-blur-md border-b border-gray-200 dark:border-white/10 h-20 flex items-center transition-colors duration-300">
@@ -96,7 +99,7 @@ const Navbar = () => {
             </Link>
 
             {/* Desktop search + location */}
-            {!isAuthPage && !isServicesPage && (
+            {!hideSearchLocation && (
             <div className="hidden md:flex items-center space-x-3">
                 {/* Location Input */}
                 <div className="relative group">
@@ -208,7 +211,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Animated Search / Location Toggle */}
-          {!isAuthPage && !isServicesPage && (
+          {!hideSearchLocation && (
           <>
           <div className="md:hidden flex-1 mx-3 relative overflow-hidden" style={{ height: '36px' }}>
             {/* Search Input (slides in from left when mobileMode === 'search') */}
@@ -298,24 +301,7 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden absolute top-20 left-0 w-full bg-white dark:bg-[#0a0a0a] border-b border-gray-200 dark:border-gray-800 z-50">
           <div className="px-4 py-6 space-y-4">
-            {/* Mobile Location & Search */}
-            {!isAuthPage && !isServicesPage && (
-            <div className="space-y-4 mb-6">
-
-                <form onSubmit={(e) => { handleSearch(e); setIsOpen(false); }} className="relative">
-                    <input 
-                        type="text" 
-                        placeholder="Search for services..." 
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-300 rounded-xl pl-4 pr-10 py-3 text-base focus:outline-none focus:border-gray-400 dark:focus:border-gray-600"
-                    />
-                    <button type="submit" className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
-                        <Search className="w-5 h-5" />
-                    </button>
-                </form>
-            </div>
-            )}
+            {/* Mobile Location & Search (Removed) */}
             {(!user || user.role === "customer") && (
               <Link to="/become-partner" onClick={() => setIsOpen(false)} className="block text-gray-700 dark:text-gray-300 text-lg font-medium">Become a Service Provider</Link>
             )}

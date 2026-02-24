@@ -28,12 +28,9 @@ app.use(cors({
         if (!origin) return callback(null, true);
         
         if (allowedOrigins.indexOf(origin) !== -1) {
-            return callback(null, true);
+            return callback(null, origin); // Reflect the actual origin back
         } else {
-            // For robustness in dev, if origin is localhost but not in list, log it but maybe allow?
-            // Let's interact with the user if they're on a wierd port.
-            // But for now, strict list is safer to debug.
-            return callback(new Error('Not allowed by CORS'));
+            return callback(new Error(`Not allowed by CORS: ${origin}`));
         }
     },
     credentials: true,

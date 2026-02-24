@@ -1,0 +1,565 @@
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { Check, Loader, User, Mail, Lock, Phone, MapPin, Map, Hash } from "lucide-react";
+import { load } from "@cashfreepayments/cashfree-js";
+import api from "../api/axios";
+import { toast } from "react-hot-toast";
+
+const PLANS = [
+  {
+    key: "free",
+    name: "Free",
+    price: null,
+    priceLabel: "Free forever",
+    highlight: false,
+    badge: null,
+    points: [
+      { real: true,  text: "Earn 70% of every service price" },
+      { real: false, text: "Up to 3 active service listings" },
+      { real: false, text: "Standard visibility in search" },
+      { real: false, text: "Basic customer support" },
+      { real: false, text: "Access to booking dashboard" },
+    ],
+  },
+  {
+    key: "basic",
+    name: "Basic",
+    price: 350,
+    priceLabel: "₹350 / month",
+    highlight: true,
+    badge: "Most Popular",
+    points: [
+      { real: true,  text: "Earn 80% of every service price" },
+      { real: false, text: "Up to 15 active service listings" },
+      { real: false, text: "Enhanced search visibility" },
+      { real: false, text: "Priority customer support" },
+      { real: false, text: "Featured in category pages" },
+    ],
+  },
+  {
+    key: "premium",
+    name: "Premium",
+    price: 500,
+    priceLabel: "₹500 / month",
+    highlight: false,
+    badge: "Best Value",
+    points: [
+      { real: true,  text: "Earn 90% of every service price" },
+      { real: false, text: "Unlimited service listings" },
+      { real: false, text: "Top placement in search results" },
+      { real: false, text: "24/7 dedicated support" },
+      { real: false, text: "Verified badge on your profile" },
+    ],
+  },
+];
+
+const ProviderRegister = () => {
+  const [searchParams] = useSearchParams();
+  const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  
+  // Pincode Dropdown Data
+  const [areaOptions, setAreaOptions] = useState([]);
+  const [fetchingPincode, setFetchingPincode] = useState(false);
+  
+  // OTP Verification States
+  const [emailVerifying, setEmailVerifying] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "provider",
+    phone: "",
+    city: "",
+    area: "",
+    zipCode: "",
+    plan: "free",
+  });
+
+  const { register } = useAuth();
+  const navigate = useNavigate();
+  const [cashfree, setCashfree] = useState(null);
+
+  useEffect(() => {
+    const initCashfree = async () => {
+      const instance = await load({
+        mode: "sandbox", 
+      });
+      setCashfree(instance);
+    };
+    initCashfree();
+  }, []);
+
+  // Handle return from payment
+  useEffect(() => {
+    const orderId = searchParams.get("order_id");
+    if (orderId) {
+      // Restore form data from localStorage
+      const savedData = localStorage.getItem("pending_registration");
+      if (savedData) {
+        setFormData(JSON.parse(savedData));
+        localStorage.removeItem("pending_registration");
+      }
+      setPaymentSuccess(true);
+      setStep(2); // Stay on plan selection but show success
+    }
+  }, [searchParams]);
+
+  // Handle Pincode Auto-fill
+  useEffect(() => {
+    const fetchPincodeDetails = async () => {
+      if (formData.zipCode.length === 6) {
+        setFetchingPincode(true);
+        try {
+          const response = await fetch(`https://api.postalpincode.in/pincode/${formData.zipCode}`);
+          const data = await response.json();
+          
+          if (data && data[0] && data[0].Status === "Success") {
+            const postOffices = data[0].PostOffice;
+            if (postOffices && postOffices.length > 0) {
+              const district = postOffices[0].District;
+              
+              setFormData(prev => ({ 
+                ...prev, 
+                city: district,
+                area: "" // Reset area when pincode changes
+              }));
+              
+              const areas = postOffices.map(po => po.Name);
+              setAreaOptions(areas);
+            }
+          } else {
+             setAreaOptions([]);
+          }
+        } catch (error) {
+          console.error("Failed to fetch pincode details", error);
+          setAreaOptions([]);
+        } finally {
+          setFetchingPincode(false);
+        }
+      } else {
+        setAreaOptions([]);
+      }
+    };
+
+    fetchPincodeDetails();
+  }, [formData.zipCode]);
+
+  const handlePay = async () => {
+    if (!cashfree) return toast.error("Payment SDK not loaded");
+    
+    // Save form data to localStorage so it persists after redirect
+    localStorage.setItem("pending_registration", JSON.stringify(formData));
+
+    setIsLoading(true);
+    try {
+      const selectedPlan = PLANS.find(p => p.key === formData.plan);
+      const response = await api.post("/payments/plan-pay", {
+        amount: selectedPlan.price,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        plan: formData.plan
+      });
+
+      if (response.data.payment_session_id) {
+          cashfree.checkout({
+            paymentSessionId: response.data.payment_session_id,
+            redirectTarget: "_self" 
+          });
+      }
+    } catch (error) {
+      console.error("Payment initiation failed:", error.response?.data || error.message);
+      const errorMsg = error.response?.data?.error?.message || error.response?.data?.message || "Failed to initiate payment";
+      toast.error(errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault();
+    setIsLoading(true);
+    try {
+      const success = await register(formData);
+      if (success) navigate("/provider");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNext = async (e) => {
+    if (e) e.preventDefault();
+    
+    // Validate required fields for Step 1
+    if (!formData.name || !formData.email || !formData.password || !formData.city || !formData.area || !formData.zipCode) {
+      return toast.error("Please fill all required fields");
+    }
+
+    setIsLoading(true);
+    try {
+      const { data } = await api.post("/auth/check-email", { email: formData.email });
+      if (!data.exists) {
+        setStep(2);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendOtp = async () => {
+    if (!formData.email) return toast.error("Please enter an email address first");
+    
+    // Simple regex check before hitting API
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) return toast.error("Please enter a valid email address");
+
+    setEmailVerifying(true);
+    try {
+      const response = await api.post("/auth/send-otp", { email: formData.email });
+      setOtpSent(true);
+      toast.success(response.data?.message || "OTP sent successfully!");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to send OTP");
+    } finally {
+      setEmailVerifying(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpCode || otpCode.length !== 6) return toast.error("Please enter a valid 6-digit OTP");
+
+    setEmailVerifying(true);
+    try {
+      const response = await api.post("/auth/verify-email", { email: formData.email, otp: otpCode });
+      setEmailVerified(true);
+      setOtpSent(false); // Hide OTP input on success
+      toast.success(response.data?.message || "Email verified successfully!");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Invalid or expired OTP");
+    } finally {
+      setEmailVerifying(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center pt-24 pb-12 px-4 relative overflow-hidden font-sans">
+      {/* Background Glowing Accents */}
+      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-purple-400/20 dark:bg-purple-600/10 rounded-full blur-[140px] pointer-events-none"></div>
+
+      <div className={`w-full ${step === 2 ? "max-w-4xl" : "max-w-[480px]"} bg-white/90 dark:bg-[#0f0f0f]/90 backdrop-blur-3xl p-6 sm:p-8 rounded-[2rem] shadow-xl dark:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-white/5 relative z-10 my-4 transition-all duration-300`}>
+
+        {/* ── STEP 1: Registration form ── */}
+        {step === 1 && (
+          <>
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Register as Provider</h2>
+            </div>
+            <form onSubmit={handleNext} className="space-y-3">
+              {/* Full Name */}
+              <div className="space-y-1.5">
+                <label className="block text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Full Name</label>
+                <div className="relative group">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
+                  <input type="text" required
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-black text-gray-900 dark:text-white transition-all shadow-inner"
+                    placeholder="John Doe" value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                </div>
+              </div>
+
+              {/* Email Address */}
+              <div className="space-y-1.5">
+                <label className="block text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Email Address</label>
+                <div className="relative group">
+                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
+                   <input type="email" required disabled={emailVerified || otpSent}
+                     className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-black text-gray-900 dark:text-white transition-all shadow-inner disabled:opacity-50 disabled:cursor-not-allowed"
+                     placeholder="name@example.com" value={formData.email}
+                     onChange={(e) => {
+                       setFormData({ ...formData, email: e.target.value });
+                       if (emailVerified) setEmailVerified(false);
+                     }} />
+                </div>
+                
+                <div className="flex justify-end pt-1">
+                   {emailVerified ? (
+                     <div className="flex items-center gap-2 text-green-600 dark:text-green-500 px-4 py-2 bg-green-50 dark:bg-green-500/10 rounded-xl border border-green-200 dark:border-green-500/20">
+                       <Check className="w-4 h-4 block" />
+                       <span className="font-bold text-xs block">Verified</span>
+                     </div>
+                   ) : !otpSent && (
+                     <button type="button" onClick={handleSendOtp} disabled={emailVerifying || !formData.email}
+                       className="px-5 py-2 transition-all bg-gray-900 text-white dark:bg-white dark:hover:bg-gray-200 dark:text-black rounded-xl font-black text-xs tracking-wide shadow-md dark:shadow-[0_0_15px_rgba(255,255,255,0.1)] dark:hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] active:scale-95 disabled:opacity-50 flex items-center justify-center">
+                       {emailVerifying ? <Loader className="animate-spin w-4 h-4 mr-2" /> : null}
+                       {emailVerifying ? "Sending OTP..." : "Verify Email"}
+                     </button>
+                   )}
+                </div>
+
+                {/* OTP Field (Conditionally shown) */}
+                {otpSent && !emailVerified && (
+                   <div className="mt-4 p-5 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-500/30 rounded-2xl animate-fade-in-down">
+                     <label className="block text-blue-600 dark:text-blue-400 text-[10px] font-black mb-3 uppercase tracking-widest text-center">Enter 6-digit OTP</label>
+                     <div className="flex flex-col gap-4">
+                       <input type="text" maxLength={6}
+                         className="w-full px-4 py-4 bg-white dark:bg-black/60 border border-gray-200 dark:border-blue-500/50 rounded-xl focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 text-gray-900 dark:text-white text-center font-black tracking-[0.5em] text-xl shadow-inner"
+                         placeholder="------" value={otpCode}
+                         onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))} />
+                       <button type="button" onClick={handleVerifyOtp} disabled={emailVerifying || otpCode.length !== 6}
+                         className="w-full px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-gray-200 dark:disabled:bg-gray-800 text-white disabled:text-gray-400 dark:disabled:text-gray-500 rounded-xl font-bold transition-colors shadow-lg shadow-green-600/20 disabled:shadow-none flex items-center justify-center">
+                         {emailVerifying ? <Loader className="animate-spin w-5 h-5 mx-auto" /> : "Verify OTP"}
+                       </button>
+                     </div>
+                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-5 text-center font-medium">
+                        Didn't receive it? <button type="button" onClick={handleSendOtp} className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors font-bold underline decoration-blue-600/30 dark:decoration-blue-400/30 underline-offset-4 ml-1">Resend OTP</button>
+                     </p>
+                   </div>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-0">
+                <div className="space-y-1.5">
+                  <label className="block text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Password</label>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
+                    <input type="password" required
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-black text-gray-900 dark:text-white transition-all shadow-inner"
+                      placeholder="••••••••" value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Phone</label>
+                  <div className="relative group">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
+                    <input type="text"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-black text-gray-900 dark:text-white transition-all shadow-inner"
+                      placeholder="+91 98765" value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Zip Code</label>
+                  <div className="relative group">
+                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 group-focus-within:text-blue-500 transition-colors" />
+                    <input type="text"
+                      className="w-full pl-8 pr-3 py-3 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-black text-gray-900 dark:text-white transition-all shadow-inner text-sm"
+                      placeholder="400001" value={formData.zipCode}
+                      onChange={(e) => setFormData({ ...formData, zipCode: e.target.value.replace(/\D/g, '') })} 
+                      maxLength={6}
+                      required />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="block text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">City</label>
+                  <div className="relative group">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 group-focus-within:text-blue-500 transition-colors" />
+                    <input type="text" required disabled={fetchingPincode}
+                      className="w-full pl-8 pr-3 py-3 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-black text-gray-900 dark:text-white transition-all shadow-inner text-sm disabled:opacity-70"
+                      placeholder="Mumbai" value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })} />
+                    {fetchingPincode && <Loader className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin w-4 h-4 text-blue-500" />}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Area</label>
+                  <div className="relative group">
+                    <Map className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-3.5 h-3.5 group-focus-within:text-blue-500 transition-colors z-10 pointer-events-none" />
+                    {areaOptions.length > 0 ? (
+                      <select required
+                        className="w-full pl-8 pr-3 py-3 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-black text-gray-900 dark:text-white transition-all shadow-inner text-sm appearance-none"
+                        value={formData.area}
+                        onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                      >
+                        <option value="" disabled>Select Area</option>
+                        {areaOptions.map((area, idx) => (
+                           <option key={idx} value={area}>{area}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input type="text" required
+                        className="w-full pl-8 pr-3 py-3 bg-gray-50 dark:bg-black/50 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:border-blue-500/50 focus:bg-white dark:focus:bg-black text-gray-900 dark:text-white transition-all shadow-inner text-sm"
+                        placeholder="Andheri" value={formData.area}
+                        onChange={(e) => setFormData({ ...formData, area: e.target.value })} />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button type="button" onClick={handleNext} disabled={isLoading || (!emailVerified && formData.email)}
+                title={!emailVerified ? "Please verify your email first" : ""}
+                className="w-full bg-blue-600 dark:bg-white text-white dark:text-black font-black py-3.5 px-4 rounded-xl hover:bg-blue-700 dark:hover:bg-gray-200 hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all flex justify-center items-center gap-2 transform active:scale-95 disabled:opacity-50 mt-4 shadow-md">
+                {isLoading ? <Loader className="animate-spin w-5 h-5" /> : "Next →"}
+              </button>
+            </form>
+            
+            {/* Divider */}
+            <div className="relative flex justify-center py-4 items-center">
+                <div className="absolute inset-0 flex items-center px-2">
+                   <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
+                </div>
+                <span className="relative bg-white dark:bg-[#0f0f0f] px-4 text-xs font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                   Already a Provider?
+                </span>
+            </div>
+
+            <div className="text-center flex items-center justify-center gap-2 mt-2">
+              <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">Access your dashboard</span>
+              <Link to="/login" className="text-gray-900 dark:text-white text-sm font-bold border-b border-gray-900 dark:border-white hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-600 dark:hover:border-gray-300 transition-colors pb-0.5">
+                Log in
+              </Link>
+            </div>
+          </>
+        )}
+
+        {/* ── STEP 2: Plan selection ── */}
+        {step === 2 && (
+          <div className="relative pt-6 sm:pt-0">
+            {!paymentSuccess && (
+              <button 
+                onClick={() => setStep(1)} 
+                className="text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition-colors font-bold absolute top-0 left-0 w-10 h-10 bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-full shadow-sm z-50 sm:top-5 sm:left-6 sm:w-auto sm:h-auto sm:bg-transparent sm:border-none sm:shadow-none sm:rounded-none sm:px-0 sm:-translate-y-0"
+                aria-label="Go Back"
+              >
+                <span className="text-xl sm:text-base sm:mr-1">←</span>
+                <span className="hidden sm:inline uppercase tracking-widest text-sm">Back</span>
+              </button>
+            )}
+            
+            {paymentSuccess ? (
+              <div className="text-center py-8">
+                <div className="w-24 h-24 bg-green-50 dark:bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg dark:shadow-[0_0_30px_rgba(34,197,94,0.3)] border border-green-200 dark:border-transparent">
+                  <Check className="w-12 h-12 text-green-600 dark:text-green-500" />
+                </div>
+                <h2 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight mb-2">Payment Successful!</h2>
+                <p className="text-gray-500 dark:text-gray-400 mb-8 font-medium">Click below to activate your account and start offering services.</p>
+                
+                <button 
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="w-full max-w-sm mx-auto bg-green-600 hover:bg-green-700 hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] text-white font-black py-4 px-4 rounded-2xl transition-all transform active:scale-95 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? <Loader className="animate-spin" /> : "Go to Dashboard"}
+                </button>
+              </div>
+            ) : (
+              <div className="mt-12 sm:mt-10">
+                <h2 className="text-[28px] sm:text-4xl font-black text-gray-900 dark:text-white text-center tracking-tight mb-6 sm:mb-8">Choose Your Plan</h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
+                  {PLANS.map((plan) => {
+                    const selected = formData.plan === plan.key;
+                    return (
+                      <button key={plan.key} type="button"
+                        onClick={() => setFormData({ ...formData, plan: plan.key })}
+                        className={`relative text-left rounded-3xl p-5 sm:p-7 border-2 transition-all duration-300 transform ${
+                          selected
+                            ? plan.highlight
+                              ? "border-blue-500 bg-gradient-to-b from-blue-50 dark:from-blue-600/20 to-white dark:to-[#0f0f0f] scale-[1.02] sm:scale-[1.03] shadow-lg shadow-blue-500/20 z-10"
+                              : "border-blue-500 bg-blue-50 dark:bg-blue-600/10 scale-[1.01] sm:scale-[1.02] shadow-md shadow-blue-500/10 z-10"
+                            : plan.highlight
+                              ? "border-purple-200 dark:border-purple-700/50 bg-gray-50 dark:bg-black/40 hover:border-purple-300 dark:hover:border-purple-600/70"
+                              : "border-gray-200 dark:border-gray-800/80 bg-gray-50 dark:bg-black/40 hover:border-gray-300 dark:hover:border-gray-600"
+                        }`}>
+
+                        {/* Badge */}
+                        {plan.badge && (
+                          <span className={`absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] sm:text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-md whitespace-nowrap ${
+                            plan.highlight ? "bg-gradient-to-r from-blue-500 to-blue-700 text-white" : "bg-gradient-to-r from-purple-500 to-purple-700 text-white"
+                          }`}>{plan.badge}</span>
+                        )}
+
+                        <h3 className={`text-lg sm:text-xl font-black mb-1 ${selected ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-300"}`}>
+                          {plan.name}
+                        </h3>
+
+                        {/* Price */}
+                        <div className="mb-4 sm:mb-5">
+                          {plan.price ? (
+                            <>
+                              <span className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">₹{plan.price}</span>
+                              <span className="text-gray-500 font-medium text-xs sm:text-sm"> / month</span>
+                            </>
+                          ) : (
+                            <span className="text-2xl sm:text-3xl font-black text-gray-500 dark:text-gray-400">Free</span>
+                          )}
+                        </div>
+
+                        <ul className="space-y-3 sm:space-y-4">
+                          {plan.points.map((pt, i) => (
+                            <li key={i} className="flex items-start gap-2.5 sm:gap-3 text-xs sm:text-sm">
+                              <Check className={`w-3.5 h-3.5 sm:w-4 sm:h-4 mt-0.5 flex-shrink-0 font-bold ${
+                                pt.real ? "text-green-500 dark:text-green-400" : "text-gray-400 dark:text-gray-700"
+                              }`} />
+                              <span className={pt.real ? "text-gray-900 dark:text-white font-bold leading-tight sm:leading-relaxed" : "text-gray-500 font-medium leading-tight sm:leading-relaxed"}>
+                                {pt.text}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        {selected && (
+                          <div className="mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-blue-500/20 text-[10px] sm:text-xs font-black text-blue-500 dark:text-blue-400 flex items-center gap-2 uppercase tracking-widest">
+                            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 dark:bg-blue-400 inline-block animate-pulse" /> Selected
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="max-w-xs sm:max-w-md mx-auto sticky bottom-4 sm:relative sm:bottom-0 z-20">
+                  {(() => {
+                    const selectedPlan = PLANS.find(p => p.key === formData.plan);
+                    const isProvider = formData.role === "provider";
+                    
+                    if (isProvider && selectedPlan?.price) {
+                      return (
+                          <button 
+                            type="button"
+                            onClick={handlePay}
+                            disabled={isLoading}
+                            className="w-full bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white font-black py-3 sm:py-4 px-4 rounded-xl sm:rounded-2xl transition-all transform active:scale-95 shadow-md shadow-blue-500/30 flex items-center justify-center gap-2 uppercase tracking-widest text-[10px] sm:text-sm"
+                          >
+                            {isLoading ? <Loader className="animate-spin" /> : `Pay ${selectedPlan.priceLabel} & Continue`}
+                          </button>
+                        );
+                      } else {
+                        return (
+                          <button 
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={isLoading}
+                            className="w-full bg-blue-600 dark:bg-white text-white dark:text-black font-black py-3 sm:py-4 px-4 rounded-xl sm:rounded-2xl hover:bg-blue-700 dark:hover:bg-gray-200 transition-all transform active:scale-95 shadow-md dark:shadow-[0_0_20px_rgba(255,255,255,0.2)] flex items-center justify-center gap-2 uppercase tracking-widest text-[10px] sm:text-sm"
+                          >
+                            {isLoading ? <Loader className="animate-spin" /> : "Create Free Account"}
+                          </button>
+                        );
+                      }
+                    })()}
+                  </div>
+                </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ProviderRegister;

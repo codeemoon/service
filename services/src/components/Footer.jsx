@@ -1,7 +1,10 @@
 import { Facebook, Twitter, Instagram, Linkedin, Mail, MapPin, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Footer = () => {
+  const { user } = useAuth();
+
   return (
     <footer className="bg-[#050505] border-t border-gray-900 text-gray-400 pt-6 pb-8 md:pt-10 md:pb-10 relative overflow-hidden">
       {/* Background Gradients */}
@@ -63,7 +66,7 @@ const Footer = () => {
             <ul className="space-y-2 text-sm">
               <li><Link to="/" className="hover:text-blue-500 transition-colors">Home</Link></li>
               <li><Link to="/services" className="hover:text-blue-500 transition-colors">Find a Service</Link></li>
-              <li><Link to="/become-partner" className="hover:text-blue-500 transition-colors">Become a Partner</Link></li>
+              {!user && <li><Link to="/become-partner" className="hover:text-blue-500 transition-colors">Become a Partner</Link></li>}
               <li><Link to="/login" className="hover:text-blue-500 transition-colors">Login / Register</Link></li>
             </ul>
           </div>
@@ -96,6 +99,7 @@ const Footer = () => {
             </ul>
             
             {/* Action Button */}
+            {!user && (
             <div className="pt-3 md:pt-4">
               <Link 
                 to="/become-partner"
@@ -110,6 +114,7 @@ const Footer = () => {
                 </div>
               </Link>
             </div>
+            )}
           </div>
 
         </div>
