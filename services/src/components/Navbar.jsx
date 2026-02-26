@@ -40,15 +40,13 @@ const Navbar = () => {
   const isAuthPage = ["/login", "/register", "/provider-register"].includes(location.pathname);
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-[#0a0a0a] backdrop-blur-md border-b border-gray-200 dark:border-white/10 h-20 flex items-center transition-colors duration-300">
+    <nav className="fixed top-0 w-full z-50 bg-white dark:bg-[#0a0a0a] backdrop-blur-md border-b border-gray-200 dark:border-white/10 h-20 flex items-center transition-colors duration-300">
       <div className="w-full px-6 lg:px-12">
         <div className="flex justify-between items-center h-full">
           {/* Logo Section */}
           <div className="flex items-center space-x-12">
             <Link to="/" className="flex items-center space-x-3">
-              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <span className="text-white font-black text-xl">H</span>
-              </div>
+              <img src="/companyLogo/abcdservices_converted.avif" alt="Helpbro Logo" className="h-10 w-auto object-contain" />
             </Link>
 
           </div>

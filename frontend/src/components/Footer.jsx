@@ -13,9 +13,8 @@ const Footer = () => {
           
           {/* Brand & Social Section */}
           <div className="space-y-4">
-            <Link to="/" className="text-2xl font-bold text-white flex items-center space-x-2">
-              <span className="bg-blue-600 w-8 h-8 rounded-lg flex items-center justify-center text-white">H</span>
-              <span>HelpBro</span>
+            <Link to="/" className="text-2xl font-bold text-white flex items-center space-x-3">
+              <img src="/companyLogo/abcdservices_converted.avif" alt="Helpbro Logo" className="h-10 w-auto object-contain bg-white rounded-lg p-1" />
             </Link>
             <div className="flex space-x-4 pt-0">
               <a href="#" className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all duration-300">
