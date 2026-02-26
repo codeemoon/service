@@ -88,12 +88,10 @@ const verifyPayment = async (req, res) => {
 
         await Booking.findByIdAndUpdate(bookingId, { status: "accepted" }); // Payment confirmed → provider must mark complete after delivering
         // Redirect to Frontend Success Page
-        // Assuming Frontend runs on localhost:5173 (standard Vite port)
-        // In production, use process.env.FRONTEND_URL
-        const frontendUrl = "http://localhost:5173"; 
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173"; 
         res.redirect(`${frontendUrl}/payment/success?bookingId=${bookingId}`);
     } else {
-        const frontendUrl = "http://localhost:5173"; 
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173"; 
         res.redirect(`${frontendUrl}/payment/failed?bookingId=${order_id.split("_")[2]}`);
     }
 
@@ -124,7 +122,7 @@ const createPlanOrder = async (req, res) => {
         customer_name: name
       },
       order_meta: {
-        return_url: `http://localhost:5173/register?order_id={order_id}&plan=${plan}`, // Redirect back to register
+        return_url: `${process.env.FRONTEND_URL || "http://localhost:5173"}/register?order_id={order_id}&plan=${plan}`,
       },
       order_note: `${plan.toUpperCase()} Plan Subscription`,
     };
