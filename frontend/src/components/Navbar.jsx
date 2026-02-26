@@ -94,7 +94,7 @@ const Navbar = () => {
           {/* Logo + Desktop Search (inline on desktop) */}
           <div className="flex items-center space-x-8">
             <Link to="/" className="flex shrink-0 items-center">
-              <img src="/companyLogo/abcdservices_converted.avif" alt="Helpbro Logo" className="h-10 w-auto object-contain" />
+              <img src="/companyLogo/abcdservices_converted.avif" alt="Helpbro Logo" className="h-14 w-auto object-contain" />
             </Link>
 
             {/* Desktop search + location (hidden on mobile) */}
